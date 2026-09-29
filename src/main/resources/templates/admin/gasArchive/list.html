@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('燃气基础档案')"/>
+</head>
+<body class="pear-container">
+<div class="layui-row layui-col-space10">
+    <!-- 行政区划统计树 -->
+    <div class="layui-col-md2">
+        <div class="layui-card">
+            <div class="layui-card-header" style="font-weight: bold;">
+                行政区划统计
+                <button class="pear-btn pear-btn-xs" style="float:right;" id="clear-region">清除筛选</button>
+            </div>
+            <div class="layui-card-body" style="padding: 8px;">
+                <div id="regionTreeContent" style="overflow:auto;">
+                    <ul id="regionTree" class="dtree" data-id="0"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="layui-col-md10">
+        <div class="layui-card">
+            <div class="layui-card-body">
+                <form class="layui-form" action="" onsubmit="return false">
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">档案编号</label>
+                        <div class="layui-input-inline" style="width: 150px;">
+                            <input type="text" name="archiveNo" class="layui-input">
+                        </div>
+                        <label class="layui-form-label">档案名称</label>
+                        <div class="layui-input-inline" style="width: 150px;">
+                            <input type="text" name="archiveName" class="layui-input">
+                        </div>
+                        <label class="layui-form-label">状态</label>
+                        <div class="layui-input-inline" style="width: 110px;">
+                            <select name="status">
+                                <option value="">全部</option>
+                                <option value="0">在用</option>
+                                <option value="1">停用</option>
+                                <option value="2">报废</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">省</label>
+                        <div class="layui-input-inline" style="width: 120px;">
+                            <select name="provinceCode" id="province_select" lay-filter="province_select">
+                                <option value=""></option>
+                                <option th:each="p : ${provinceList}" th:value="${p.provinceCode}" th:text="${p.provinceName}"></option>
+                            </select>
+                        </div>
+                        <label class="layui-form-label">市</label>
+                        <div class="layui-input-inline" style="width: 120px;">
+                            <select name="cityCode" id="city_select" lay-filter="city_select"></select>
+                        </div>
+                        <label class="layui-form-label">区/片区</label>
+                        <div class="layui-input-inline" style="width: 120px;">
+                            <select name="areaCode" id="area_select" lay-filter="area_select"></select>
+                        </div>
+                        <label class="layui-form-label">街道</label>
+                        <div class="layui-input-inline" style="width: 120px;">
+                            <select name="streetCode" id="street_select"></select>
+                        </div>
+                        <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="archive-query">
+                            <i class="layui-icon layui-icon-search"></i> 查询
+                        </button>
+                        <button type="reset" class="pear-btn pear-btn-md" id="btn-reset">
+                            <i class="layui-icon layui-icon-refresh"></i> 重置
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="layui-card">
+            <div class="layui-card-body">
+                <div class="layui-btn-group" style="margin-bottom: 10px;">
+                    <a th:if="${archiveKind == 'pipe'}" shiro:hasPermission="gasArchive:pipe:add"
+                       class="pear-btn pear-btn-md pear-btn-primary" onclick="openAdd()">
+                        <i class="layui-icon layui-icon-add-1"></i> 管道建档
+                    </a>
+                    <a th:if="${archiveKind == 'station'}" shiro:hasPermission="gasArchive:station:add"
+                       class="pear-btn pear-btn-md pear-btn-primary" onclick="openAdd()">
+                        <i class="layui-icon layui-icon-add-1"></i> 调压站建档
+                    </a>
+                    <a th:if="${archiveKind == 'pipe'}" shiro:hasPermission="gasArchive:pipe:export"
+                       class="pear-btn pear-btn-md pear-btn-success" onclick="exportLedger(1)">
+                        <i class="layui-icon layui-icon-export"></i> 导出台账(含历史)
+                    </a>
+                    <a th:if="${archiveKind == 'pipe'}" shiro:hasPermission="gasArchive:pipe:export"
+                       class="pear-btn pear-btn-md" onclick="exportLedger(0)">
+                        仅导出在用
+                    </a>
+                    <a th:if="${archiveKind == 'station'}" shiro:hasPermission="gasArchive:station:export"
+                       class="pear-btn pear-btn-md pear-btn-success" onclick="exportLedger(1)">
+                        <i class="layui-icon layui-icon-export"></i> 导出台账(含历史)
+                    </a>
+                    <a th:if="${archiveKind == 'station'}" shiro:hasPermission="gasArchive:station:export"
+                       class="pear-btn pear-btn-md" onclick="exportLedger(0)">
+                        仅导出在用
+                    </a>
+                    <span class="layui-badge layui-bg-gray" id="region-tip"
+                          style="display:none; margin-left:10px; line-height:30px; padding:0 12px;"></span>
+                </div>
+                <table id="archive-table" lay-filter="archive-table"></table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+
+<script type="text/html" id="archive-status">
+    {{# if(d.status == 0){ }}
+    <span class="layui-badge layui-bg-green">在用</span>
+    {{# } else if(d.status == 1){ }}
+    <span class="layui-badge layui-bg-orange">停用</span>
+    {{# } else { }}
+    <span class="layui-badge">报废</span>
+    {{# } }}
+</script>
+
+<script type="text/html" id="archive-bar">
+    {{# if(d.status == 2){ }}
+    <span class="layui-word-aux">终态冻结</span>
+    {{# } else if(d.archiveType == 1){ }}
+    <button shiro:hasPermission="gasArchive:station:detail" class="pear-btn pear-btn-primary pear-btn-sm"
+            lay-event="detail" title="档案详情(管辖管段/维护记录)"><i class="layui-icon layui-icon-about"></i></button>
+    <button shiro:hasPermission="gasArchive:station:edit" class="pear-btn pear-btn-warming pear-btn-sm"
+            lay-event="edit" title="编辑"><i class="layui-icon layui-icon-edit"></i></button>
+    {{# if(d.status == 0){ }}
+    <button shiro:hasPermission="gasArchive:station:changeStatus" class="pear-btn pear-btn-normal pear-btn-sm"
+            lay-event="stop" title="停用"><i class="layui-icon layui-icon-pause"></i></button>
+    {{# } }}
+    {{# if(d.status == 1){ }}
+    <button shiro:hasPermission="gasArchive:station:changeStatus" class="pear-btn pear-btn-success pear-btn-sm"
+            lay-event="resume" title="恢复在用"><i class="layui-icon layui-icon-play"></i></button>
+    <button shiro:hasPermission="gasArchive:station:changeStatus" class="pear-btn pear-btn-danger pear-btn-sm"
+            lay-event="scrap" title="报废(终态)"><i class="layui-icon layui-icon-close-fill"></i></button>
+    {{# } }}
+    {{# } else { }}
+    <button shiro:hasPermission="gasArchive:pipe:edit" class="pear-btn pear-btn-warming pear-btn-sm"
+            lay-event="edit" title="编辑"><i class="layui-icon layui-icon-edit"></i></button>
+    {{# if(d.status == 0){ }}
+    <button shiro:hasPermission="gasArchive:pipe:changeStatus" class="pear-btn pear-btn-normal pear-btn-sm"
+            lay-event="stop" title="停用"><i class="layui-icon layui-icon-pause"></i></button>
+    {{# } }}
+    {{# if(d.status == 1){ }}
+    <button shiro:hasPermission="gasArchive:pipe:changeStatus" class="pear-btn pear-btn-success pear-btn-sm"
+            lay-event="resume" title="恢复在用"><i class="layui-icon layui-icon-play"></i></button>
+    <button shiro:hasPermission="gasArchive:pipe:changeStatus" class="pear-btn pear-btn-danger pear-btn-sm"
+            lay-event="scrap" title="报废(终态)"><i class="layui-icon layui-icon-close-fill"></i></button>
+    {{# } }}
+    {{# } }}
+</script>
+
+<th:block th:include="include :: footer"/>
+<script th:inline="javascript">
+    let ARCHIVE_KIND = [[${archiveKind}]];
+    let MODULE_PATH = rootPath + (ARCHIVE_KIND === 'station' ? "/gasStationArchive/" : "/gasPipeArchive/");
+
+    layui.use(['table', 'form', 'jquery', 'dtree'], function () {
+        let table = layui.table;
+        let form = layui.form;
+        let $ = layui.jquery;
+        let dtree = layui.dtree;
+
+        // 当前区域树筛选条件（点击树节点写入）
+        let regionFilter = {field: null, code: null, label: null};
+
+        let commonCols = [
+            {title: 'ID', field: 'id', align: 'center', hide: true},
+            {title: '档案编号', field: 'archiveNo', align: 'left', width: 130},
+            {title: '档案名称', field: 'archiveName', align: 'left', minWidth: 160}
+        ];
+        let pipeCols = [
+            {title: '管径', field: 'pipeSpec', align: 'center', width: 90},
+            {title: '材质', field: 'materialType', align: 'center', width: 100},
+            {title: '铺设年份', field: 'layYear', align: 'center', width: 90},
+            {title: '起点坐标', align: 'center', width: 170, templet: function (d) {
+                    return fmtCoord(d.startLng, d.startLat);
+                }},
+            {title: '终点坐标', align: 'center', width: 170, templet: function (d) {
+                    return fmtCoord(d.endLng, d.endLat);
+                }}
+        ];
+        let stationCols = [
+            {title: '站点坐标', align: 'center', width: 190, templet: function (d) {
+                    return fmtCoord(d.startLng, d.startLat);
+                }},
+            {title: '管径(进出)', field: 'pipeSpec', align: 'center', width: 110},
+            {title: '设备材质', field: 'materialType', align: 'center', width: 90},
+            {title: '铺设年份', field: 'layYear', align: 'center', width: 90}
+        ];
+        let tailCols = [
+            {title: '所属行政区', field: 'regionName', align: 'left', minWidth: 220},
+            {title: '所属片区', field: 'sectorName', align: 'center', width: 110},
+            {title: '状态', field: 'status', align: 'center', width: 90, toolbar: '#archive-status'},
+            {title: '状态变更时间', field: 'statusTime', align: 'center', width: 165},
+            {title: '操作', toolbar: '#archive-bar', align: 'center', width: 170, fixed: 'right'}
+        ];
+        let cols = [commonCols.concat(ARCHIVE_KIND === 'station' ? stationCols : pipeCols).concat(tailCols)];
+
+        function fmtCoord(lng, lat) {
+            if (lng == null || lng === '' || lat == null || lat === '') {
+                return '<span class="layui-word-aux">-</span>';
+            }
+            return lng + ', ' + lat;
+        }
+
+        function currentWhere() {
+            let f = $('.layui-form').serializeArray().reduce(function (acc, item) {
+                acc[item.name] = item.value;
+                return acc;
+            }, {});
+            // 列表默认含全部状态，由状态下拉过滤；历史档案不过滤掉
+            f.includeHistory = 1;
+            if (regionFilter.field) {
+                f[regionFilter.field] = regionFilter.code;
+            }
+            return f;
+        }
+
+        table.render({
+            elem: '#archive-table',
+            url: MODULE_PATH + 'list',
+            page: true,
+            method: 'get',
+            cols: cols,
+            skin: 'line',
+            where: {includeHistory: 1},
+            defaultToolbar: [{'layEvent': 'refresh', icon: 'layui-icon-refresh'}, 'filter', 'print', 'exports']
+        });
+
+        function reloadTable() {
+            table.reload('archive-table', {where: currentWhere(), page: {curr: 1}});
+        }
+
+        form.on('submit(archive-query)', function () {
+            reloadTable();
+            return false;
+        });
+
+        // ---------- 省市区街道联动（用下拉查询即放弃树筛选） ----------
+        form.on('select(province_select)', function () {
+            clearRegionFilter();
+            loadLink('#city_select', '/ProvinceLinkageController/getCity?pid=', $('#province_select').val(),
+                'cityCode', 'cityName', ['#area_select', '#street_select']);
+        });
+        form.on('select(city_select)', function () {
+            clearRegionFilter();
+            loadLink('#area_select', '/ProvinceLinkageController/getArea?pid=', $('#city_select').val(),
+                'areaCode', 'areaName', ['#street_select']);
+        });
+        form.on('select(area_select)', function () {
+            clearRegionFilter();
+            loadLink('#street_select', '/ProvinceLinkageController/getStreet?pid=', $('#area_select').val(),
+                'streetCode', 'streetName', []);
+        });
+
+        function clearRegionFilter() {
+            regionFilter = {field: null, code: null, label: null};
+            $('#region-tip').hide();
+        }
+
+        function loadLink(targetSel, url, pid, valField, textField, resetSels) {
+            $(targetSel).empty().append('<option value=""></option>');
+            (resetSels || []).forEach(function (s) {
+                $(s).empty().append('<option value=""></option>');
+            });
+            if (!pid) {
+                form.render('select');
+                return;
+            }
+            $.get(rootPath + url + pid, function (data) {
+                (data || []).forEach(function (item) {
+                    $(targetSel).append('<option value="' + item[valField] + '">' + item[textField] + '</option>');
+                });
+                form.render('select');
+            });
+        }
+
+        // ---------- 行政区划统计树 ----------
+        dtree.render({
+            elem: "#regionTree",
+            initLevel: "2",
+            line: true,
+            ficon: ["1", "-1"],
+            icon: ["0", "2"],
+            method: 'get',
+            dataFormat: "list",
+            response: {message: "message", statusCode: 200, treeId: "id", parentId: "parentId", title: "title"},
+            url: MODULE_PATH + "regionStats",
+            menubar: true,
+            height: "full-180",
+            width: "95%"
+        });
+
+        dtree.on("node(regionTree)", function (obj) {
+            let nodeId = obj.param.nodeId; // P-/C-/A-/S- 前缀编码
+            let map = {P: 'provinceCode', C: 'cityCode', A: 'areaCode', S: 'streetCode'};
+            regionFilter = {field: map[nodeId.charAt(0)], code: nodeId.substring(2), label: obj.param.context};
+            // 节点标题含统计尾巴「名称（共x…）」，提示只取名称部分
+            let shortLabel = regionFilter.label.split('（')[0];
+            $('#region-tip').text('区域筛选：' + shortLabel).show();
+            // 树筛选为权威条件：清空联动下拉，避免懒加载未拉全的下拉值与之冲突
+            $('select[name="provinceCode"]').val('');
+            $('#city_select,#area_select,#street_select').empty().append('<option value=""></option>');
+            form.render('select');
+            reloadTable();
+        });
+
+        $('#clear-region').click(function () {
+            regionFilter = {field: null, code: null, label: null};
+            $('#region-tip').hide();
+            reloadTable();
+        });
+
+        $('#btn-reset').click(function () {
+            regionFilter = {field: null, code: null, label: null};
+            $('#region-tip').hide();
+            $('#city_select,#area_select,#street_select').empty().append('<option value=""></option>');
+            form.render('select');
+            setTimeout(reloadTable, 0);
+        });
+
+        // ---------- 行操作 ----------
+        table.on('tool(archive-table)', function (obj) {
+            if (obj.event === 'edit') {
+                openEdit(obj.data.id);
+            } else if (obj.event === 'detail') {
+                openDetail(obj.data.id);
+            } else if (obj.event === 'stop') {
+                askReason('停用档案「' + obj.data.archiveName + '」？停用后不再安排巡检派单，档案仍保留。',
+                    obj.data.id, 1);
+            } else if (obj.event === 'resume') {
+                layer.confirm('确认恢复档案「' + obj.data.archiveName + '」为在用？', {icon: 3, title: '恢复确认'},
+                    function (idx) {
+                        layer.close(idx);
+                        submitStatus(obj.data.id, 0, '');
+                    });
+            } else if (obj.event === 'scrap') {
+                askReason('报废为终态操作，报废后档案不可恢复、不可删除，仅台账留痕。确认报废「'
+                    + obj.data.archiveName + '」？', obj.data.id, 2);
+            }
+        });
+
+        function askReason(tip, id, status) {
+            layer.prompt({title: tip, formType: 2, area: ['420px', '120px'], value: ''},
+                function (reason, idx) {
+                    layer.close(idx);
+                    submitStatus(id, status, reason);
+                });
+        }
+
+        function submitStatus(id, status, reason) {
+            let loading = layer.load();
+            $.post(MODULE_PATH + 'changeStatus', {id: id, status: status, reason: reason}, function (result) {
+                layer.close(loading);
+                if (result.code == 200) {
+                    layer.msg(result.msg, {icon: 1, time: 1000}, reloadTable);
+                } else {
+                    layer.msg(result.msg, {icon: 2, time: 1800});
+                }
+            });
+        }
+
+        window.openAdd = function () {
+            layer.open({
+                type: 2,
+                title: ARCHIVE_KIND === 'station' ? '调压站建档' : '管道建档',
+                area: ['780px', '640px'], shadeClose: false,
+                content: MODULE_PATH + 'add'
+            });
+        };
+        window.openEdit = function (id) {
+            layer.open({
+                type: 2,
+                title: ARCHIVE_KIND === 'station' ? '编辑调压站档案' : '编辑管道档案',
+                area: ['780px', '640px'], shadeClose: false,
+                content: MODULE_PATH + 'edit?id=' + id
+            });
+        };
+        window.openDetail = function (id) {
+            layer.open({
+                type: 2, title: '调压站档案详情',
+                area: ['900px', '680px'], shadeClose: false,
+                content: MODULE_PATH + 'detail?id=' + id
+            });
+        };
+
+        window.exportLedger = function (includeHistory) {
+            let f = currentWhere();
+            f.includeHistory = includeHistory;
+            let qs = Object.keys(f).filter(function (k) {
+                return f[k] !== '' && f[k] != null;
+            }).map(function (k) {
+                return encodeURIComponent(k) + '=' + encodeURIComponent(f[k]);
+            }).join('&');
+            window.location.href = MODULE_PATH + 'export?' + qs;
+        };
+    });
+</script>
+</html>

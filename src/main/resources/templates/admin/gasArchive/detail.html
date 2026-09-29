@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="include :: header('调压站档案详情')"/>
+</head>
+<body class="pear-container">
+<div class="layui-card" th:object="${archive}">
+    <div class="layui-card-header" style="font-weight: bold;">
+        基础档案
+        <span style="margin-left:10px;">
+            <b th:text="*{archiveNo}"></b>
+            <b th:text="*{archiveName}" style="margin-left:8px;"></b>
+        </span>
+        <span style="margin-left:12px;">
+            <span class="layui-badge layui-bg-green" th:if="*{status == 0}">在用</span>
+            <span class="layui-badge layui-bg-orange" th:if="*{status == 1}">停用</span>
+            <span class="layui-badge" th:if="*{status == 2}">报废</span>
+        </span>
+    </div>
+    <div class="layui-card-body">
+        <table class="layui-table" style="margin:0;">
+            <colgroup>
+                <col width="120"><col width="220"><col width="120"><col>
+            </colgroup>
+            <tbody>
+            <tr>
+                <td class="layui-bg-gray">站点坐标</td>
+                <td th:text="|*{startLng}, *{startLat}|"></td>
+                <td class="layui-bg-gray">设备型号</td>
+                <td th:text="${deviceModel == null || deviceModel.isEmpty() ? '—' : deviceModel}"></td>
+            </tr>
+            <tr>
+                <td class="layui-bg-gray">管径(进出)</td>
+                <td th:text="*{pipeSpec}"></td>
+                <td class="layui-bg-gray">材质类型</td>
+                <td th:text="*{materialType}"></td>
+            </tr>
+            <tr>
+                <td class="layui-bg-gray">铺设年份</td>
+                <td th:text="*{layYear}"></td>
+                <td class="layui-bg-gray">所属片区</td>
+                <td th:text="*{sectorName}"></td>
+            </tr>
+            <tr>
+                <td class="layui-bg-gray">所属行政区</td>
+                <td colspan="3" th:text="*{regionName}"></td>
+            </tr>
+            <tr>
+                <td class="layui-bg-gray">建档时间</td>
+                <td th:text="${#dates.format(archive.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                <td class="layui-bg-gray">状态变更时间</td>
+                <td th:text="${archive.statusTime == null ? '—' : #dates.format(archive.statusTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+            </tr>
+            <tr>
+                <td class="layui-bg-gray">备注</td>
+                <td colspan="3" th:text="*{remark}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="layui-card">
+    <div class="layui-card-header" style="font-weight: bold;">
+        管辖管段范围
+        <button shiro:hasPermission="gasArchive:station:editPipes"
+                class="pear-btn pear-btn-warming pear-btn-sm" style="float:right;" onclick="editPipes()">
+            <i class="layui-icon layui-icon-set"></i> 配置管辖管段
+        </button>
+    </div>
+    <div class="layui-card-body">
+        <table class="layui-table" id="pipe-table">
+            <thead>
+            <tr>
+                <th>管道编号</th>
+                <th>管道名称</th>
+                <th>管径</th>
+                <th>材质</th>
+                <th>铺设年份</th>
+                <th>所属行政区</th>
+                <th>状态</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="p : ${managedPipes}">
+                <td th:text="${p.archiveNo}"></td>
+                <td th:text="${p.archiveName}"></td>
+                <td th:text="${p.pipeSpec}"></td>
+                <td th:text="${p.materialType}"></td>
+                <td th:text="${p.layYear}"></td>
+                <td th:text="${p.regionName}"></td>
+                <td>
+                    <span class="layui-badge layui-bg-green" th:if="${p.status == 0}">在用</span>
+                    <span class="layui-badge layui-bg-orange" th:if="${p.status == 1}">停用</span>
+                    <span class="layui-badge" th:if="${p.status == 2}">报废</span>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(managedPipes)}">
+                <td colspan="7" style="text-align:center; color:#999;">暂未配置管辖管段</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="layui-card">
+    <div class="layui-card-header" style="font-weight: bold;">
+        维护记录（只增不改）
+        <button shiro:hasPermission="gasArchive:station:maint"
+                class="pear-btn pear-btn-primary pear-btn-sm" style="float:right;" onclick="addMaint()">
+            <i class="layui-icon layui-icon-add-1"></i> 登记维护记录
+        </button>
+    </div>
+    <div class="layui-card-body">
+        <table class="layui-table" id="maint-table">
+            <thead>
+            <tr>
+                <th width="160">维护时间</th>
+                <th width="110">维护类别</th>
+                <th>维护内容</th>
+                <th width="100">维护人</th>
+                <th width="200">维护结果</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="m : ${maintRecords}">
+                <td th:text="${#dates.format(m.maintTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                <td th:text="${m.maintType}"></td>
+                <td th:text="${m.content}"></td>
+                <td th:text="${m.operator}"></td>
+                <td th:text="${m.result}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(maintRecords)}">
+                <td colspan="5" style="text-align:center; color:#999;">暂无维护记录</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<th:block th:include="include :: footer"/>
+<script th:inline="javascript">
+    // 用字符串承载雪花 id，避免超出 JS 安全整数范围；提交时 Spring 自动绑定为 Long
+    let STATION_ID = "[[${archive.id}]]";
+    let MODULE_PATH = rootPath + "/gasStationArchive/";
+
+    layui.use(['jquery', 'layer', 'form', 'laydate'], function () {
+        let $ = layui.jquery;
+        let form = layui.form;
+        let laydate = layui.laydate;
+
+        // 当前已管辖管段 id（Thymeleaf 内联），配置弹窗据此回显勾选
+        let currentPipeIds = ([[${managedPipeIds}]] || []).map(String);
+
+        function statusText(s) {
+            return s == 0 ? '在用' : (s == 1 ? '停用' : '报废');
+        }
+
+        window.editPipes = function () {
+            $.get(MODULE_PATH + 'pipePicker', function (all) {
+                layer.open({
+                    type: 1, title: '配置管辖管段（全量覆盖）', area: ['720px', '520px'], shadeClose: false,
+                    content: buildPickerHtml(all),
+                    success: function () {
+                        $('input[name="pipePick"]').each(function () {
+                            if (currentPipeIds.indexOf($(this).val()) >= 0) {
+                                $(this).prop('checked', true);
+                            }
+                        });
+                        form.render('checkbox');
+                    },
+                    btn: ['保存', '取消'],
+                    yes: function (idx) {
+                        let ids = $('input[name="pipePick"]:checked').map(function () {
+                            return $(this).val();
+                        }).get();
+                        $.post(MODULE_PATH + 'savePipes',
+                            $.param({stationId: STATION_ID}, true)
+                                + (ids.length ? '&' + ids.map(function (i) {
+                                    return 'pipeIds=' + i;
+                                }).join('&') : ''),
+                            function (res) {
+                                if (res.code == 200) {
+                                    layer.close(idx);
+                                    layer.msg(res.msg, {icon: 1, time: 1200}, function () {
+                                        location.reload();
+                                    });
+                                } else {
+                                    layer.msg(res.msg, {icon: 2});
+                                }
+                            });
+                    }
+                });
+            });
+        };
+
+        // 当前已关联管段 id 由页面表格无法直接提供，改为详情加载时内联
+        function buildPickerHtml(all) {
+            let rows = (all || []).map(function (p) {
+                let label = p.archiveNo + ' ' + (p.archiveName || '') + '（'
+                    + (p.pipeSpec || '-') + '，' + statusText(p.status) + '）';
+                // label 放进 title 属性，需转义引号防属性截断
+                label = $('<div>').text(label).html();
+                return '<div style="padding:4px 8px;">'
+                    + '<input type="checkbox" name="pipePick" value="' + p.id + '" lay-skin="primary" title="'
+                    + label + '"></div>';
+            }).join('');
+            return '<div style="padding:12px; max-height:380px; overflow:auto;" class="layui-form">' +
+                (rows || '<div style="color:#999;">暂无可选管道，请先建立管道档案</div>') + '</div>';
+        }
+
+        window.addMaint = function () {
+            layer.open({
+                type: 1, title: '登记维护记录', area: ['560px', '480px'], shadeClose: false,
+                content: '<form class="layui-form" style="padding:18px 20px 0;">'
+                    + '<div class="layui-form-item"><label class="layui-form-label">维护时间</label>'
+                    + '<div class="layui-input-block"><input type="text" id="maintTime" name="maintTime" class="layui-input"></div></div>'
+                    + '<div class="layui-form-item"><label class="layui-form-label">维护类别</label>'
+                    + '<div class="layui-input-block"><select name="maintType">'
+                    + '<option value="日常维护">日常维护</option><option value="定期检修">定期检修</option>'
+                    + '<option value="年度校验">年度校验</option><option value="抢修">抢修</option>'
+                    + '</select></div></div>'
+                    + '<div class="layui-form-item"><label class="layui-form-label">维护内容</label>'
+                    + '<div class="layui-input-block"><textarea name="content" class="layui-textarea" required></textarea></div></div>'
+                    + '<div class="layui-form-item"><label class="layui-form-label">维护人</label>'
+                    + '<div class="layui-input-block"><input type="text" name="operator" class="layui-input"></div></div>'
+                    + '<div class="layui-form-item"><label class="layui-form-label">维护结果</label>'
+                    + '<div class="layui-input-block"><input type="text" name="result" class="layui-input"></div></div>'
+                    + '</form>',
+                success: function () {
+                    form.render();
+                    laydate.render({elem: '#maintTime', type: 'datetime', format: 'yyyy-MM-dd HH:mm:ss',
+                        value: new Date()});
+                },
+                btn: ['提交', '取消'],
+                yes: function (idx) {
+                    let body = $('.layui-layer-content form').serializeArray().reduce(function (acc, x) {
+                        acc[x.name] = x.value;
+                        return acc;
+                    }, {});
+                    body.stationId = STATION_ID;
+                    if (!body.content) {
+                        layer.msg('维护内容不能为空', {icon: 2});
+                        return;
+                    }
+                    $.post(MODULE_PATH + 'addMaint', body, function (res) {
+                        if (res.code == 200) {
+                            layer.close(idx);
+                            layer.msg(res.msg, {icon: 1, time: 1000}, function () {
+                                location.reload();
+                            });
+                        } else {
+                            layer.msg(res.msg, {icon: 2});
+                        }
+                    });
+                }
+            });
+        };
+    });
+</script>
+</body>
+</html>

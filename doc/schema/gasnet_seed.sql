@@ -76,3 +76,95 @@ VALUES (600201, 6002, 'RO20260928100002', 0, '接单', 0, 'admin', '管理员', 
        (600303, 6003, 'RO20260928110003', 2, '提交抢修结果', 2, 'admin', '管理员', '更换密封圈并复紧接头，气密试验合格', DATE_SUB(NOW(), INTERVAL 26 HOUR)),
        (600304, 6003, 'RO20260928110003', 3, '现场复核', 3, 'admin', '管理员', '现场复核浓度检测正常，复核通过', DATE_SUB(NOW(), INTERVAL 25 HOUR)),
        (600305, 6003, 'RO20260928110003', 4, '完工封卡', 4, 'admin', '管理员', '资料齐全，准予封卡', DATE_SUB(NOW(), INTERVAL 24 HOUR));
+
+-- ============================================================================
+-- 燃气管道与调压站基础档案演示数据（2026-09-29）
+-- 演示行政区划：青坪省(990000)—青坪市(990100)—城东区/城西片区(990101/990102)—东湖街道等
+-- ============================================================================
+
+INSERT IGNORE INTO t_sys_province (id, province_code, province_name, short_name, lng, lat, sort, data_state, create_by, create_time)
+VALUES (9901, '990000', '青坪省', '青坪', '112.900000', '28.200000', 99, 0, 'seed', NOW());
+
+INSERT IGNORE INTO t_sys_city (id, city_code, city_name, short_name, province_code, lng, lat, sort, data_state, create_by, create_time)
+VALUES (9901, '990100', '青坪市', '青坪', '990000', '112.950000', '28.230000', 99, 0, 'seed', NOW());
+
+INSERT IGNORE INTO t_sys_area (id, area_code, city_code, area_name, short_name, lng, lat, sort, data_state, create_by, create_time)
+VALUES (9901, '990101', '990100', '城东区', '城东', '112.980000', '28.240000', 1, 0, 'seed', NOW()),
+       (9902, '990102', '990100', '城西片区', '城西', '112.900000', '28.230000', 2, 0, 'seed', NOW());
+
+INSERT IGNORE INTO t_sys_street (id, street_code, area_code, street_name, short_name, lng, lat, sort, data_state, create_by, create_time)
+VALUES (9901, '990101001', '990101', '东湖街道', '东湖', '112.990000', '28.245000', 1, 0, 'seed', NOW()),
+       (9902, '990101002', '990101', '西河街道', '西河', '112.970000', '28.235000', 2, 0, 'seed', NOW()),
+       (9903, '990102001', '990102', '南湖街道', '南湖', '112.890000', '28.220000', 1, 0, 'seed', NOW());
+
+-- 管道档案：0在用 1停用 2报废；调压站档案无终点坐标
+INSERT IGNORE INTO t_gas_pipe_archive (id, archive_no, archive_type, archive_name, start_lng, start_lat, end_lng, end_lat, pipe_spec, material_type, lay_year, province_code, city_code, area_code, street_code, region_name, sector_name, status, status_time, del_flag, create_by, create_time, remark)
+VALUES (9301, 'PA-GD-0001', 0, '城东区东湖路中压主干管', 112.991200, 28.246300, 112.998800, 28.249100, 'DN300', '无缝钢管', 2012, '990000', '990100', '990101', '990101001', '青坪省—青坪市—城东区—东湖街道', '东湖片区', 0, NOW(), 0, 'seed', NOW(), '城区中压主干'),
+       (9302, 'PA-GD-0002', 0, '城东区东湖街庭院支管', 112.990100, 28.244200, 112.993500, 28.245800, 'De110', 'PE管', 2003, '990000', '990100', '990101', '990101001', '青坪省—青坪市—城东区—东湖街道', '东湖片区', 1, NOW(), 0, 'seed', NOW(), '老化停用，待报废评估'),
+       (9303, 'PA-GD-0003', 0, '城西片区南湖路次干管', 112.888100, 28.219600, 112.895400, 28.224300, 'DN200', '球墨铸铁管', 2018, '990000', '990100', '990102', '990102001', '青坪省—青坪市—城西片区—南湖街道', '南湖片区', 0, NOW(), 0, 'seed', NOW(), NULL),
+       (9304, 'PA-GD-0004', 0, '城东区西河路老低压管', 112.968200, 28.233100, 112.972800, 28.236900, 'DN150', '灰口铸铁管', 1996, '990000', '990100', '990101', '990101002', '青坪省—青坪市—城东区—西河街道', '西河片区', 2, NOW(), 0, 'seed', NOW(), '已报废,档案永久保留'),
+       (9311, 'PA-ZJ-0001', 1, '城东东湖调压站', 112.992600, 28.247100, NULL, NULL, 'DN200/DN100', '钢制', 2012, '990000', '990100', '990101', '990101001', '青坪省—青坪市—城东区—东湖街道', '东湖片区', 0, NOW(), 0, 'seed', NOW(), '区域中压调压枢纽'),
+       (9312, 'PA-ZJ-0002', 1, '西河南湖调压柜', 112.891300, 28.221500, NULL, NULL, 'DN100/DN50', '钢制', 2008, '990000', '990100', '990102', '990102001', '青坪省—青坪市—城西片区—南湖街道', '南湖片区', 1, NOW(), 0, 'seed', NOW(), '设备老化停用检修');
+
+-- 调压站设备型号
+INSERT IGNORE INTO t_gas_regulator_station (id, station_id, device_model, del_flag, create_by, create_time, remark)
+VALUES (9401, 9311, 'RX-300/0.4-M 区域调压柜(双路)', 0, 'seed', NOW(), '一用一备双调压器'),
+       (9402, 9312, 'RX-100/0.4-S 楼栋调压箱(单路)', 0, 'seed', NOW(), NULL);
+
+-- 城东东湖调压站管辖管段：9301、9302
+INSERT IGNORE INTO t_gas_station_pipe (id, station_id, pipe_id, create_by, create_time)
+VALUES (9501, 9311, 9301, 'seed', NOW()),
+       (9502, 9311, 9302, 'seed', NOW());
+
+-- 维护记录（只增不改）
+INSERT IGNORE INTO t_gas_station_maint (id, station_id, maint_time, maint_type, content, operator, result, create_by, create_time)
+VALUES (9601, 9311, DATE_SUB(NOW(), INTERVAL 90 DAY), '定期检修', '调压器拆解清洗、更换阀口垫片、校验切断压力', '张维护', '出口压力稳定,校验合格', 'seed', NOW()),
+       (9602, 9311, DATE_SUB(NOW(), INTERVAL 20 DAY), '日常维护', '滤芯清污、安全放散阀动作试验、井室积水抽排', '李巡检', '动作正常', 'seed', NOW()),
+       (9603, 9312, DATE_SUB(NOW(), INTERVAL 12 DAY), '抢修', '出口压力波动,临时停用并更换老化膜片', '王抢修', '停用待复测,暂未恢复供气', 'seed', NOW());
+
+-- ============================================================================
+-- 菜单与权限（授给管理员角色 488243256161730560；档案管理独立目录 9200）
+-- ============================================================================
+INSERT IGNORE INTO t_sys_permission (id, name, descripion, url, is_blank, pid, perms, type, icon, order_num, visible, create_by, create_time)
+VALUES (9200, '燃气档案管理', '管道与调压站基础档案', '', 0, 0, '', 0, 'layui-icon layui-icon-template-1', 20, 0, 'seed', NOW()),
+       (9210, '管道档案', '管道档案台账', '/gasPipeArchive/view', 0, 9200, 'gasArchive:pipe:view', 1, 'layui-icon layui-icon-share', 1, 0, 'seed', NOW()),
+       (9211, '管道档案集合', '管道档案集合查询', '/gasPipeArchive/list', 0, 9210, 'gasArchive:pipe:list', 2, '', NULL, 0, 'seed', NOW()),
+       (9212, '管道档案新增', '管道档案建档', '/gasPipeArchive/add', 0, 9210, 'gasArchive:pipe:add', 2, '', NULL, 0, 'seed', NOW()),
+       (9213, '管道档案编辑', '管道档案属性变更', '/gasPipeArchive/edit', 0, 9210, 'gasArchive:pipe:edit', 2, '', NULL, 0, 'seed', NOW()),
+       (9214, '管道状态调整', '在用/停用/报废状态流转', '/gasPipeArchive/changeStatus', 0, 9210, 'gasArchive:pipe:changeStatus', 2, '', NULL, 0, 'seed', NOW()),
+       (9215, '管道台账导出', '管道档案台账导出', '/gasPipeArchive/export', 0, 9210, 'gasArchive:pipe:export', 2, '', NULL, 0, 'seed', NOW()),
+       (9216, '区域档案统计', '按行政区划统计数量状态', '/gasPipeArchive/regionStats', 0, 9210, 'gasArchive:pipe:stats', 2, '', NULL, 0, 'seed', NOW()),
+       (9220, '调压站档案', '调压站档案台账', '/gasStationArchive/view', 0, 9200, 'gasArchive:station:view', 1, 'layui-icon layui-icon-app', 2, 0, 'seed', NOW()),
+       (9221, '调压站档案集合', '调压站档案集合查询', '/gasStationArchive/list', 0, 9220, 'gasArchive:station:list', 2, '', NULL, 0, 'seed', NOW()),
+       (9222, '调压站档案新增', '调压站档案建档', '/gasStationArchive/add', 0, 9220, 'gasArchive:station:add', 2, '', NULL, 0, 'seed', NOW()),
+       (9223, '调压站档案编辑', '调压站档案属性变更/片区划转', '/gasStationArchive/edit', 0, 9220, 'gasArchive:station:edit', 2, '', NULL, 0, 'seed', NOW()),
+       (9224, '调压站状态调整', '在用/停用/报废状态流转', '/gasStationArchive/changeStatus', 0, 9220, 'gasArchive:station:changeStatus', 2, '', NULL, 0, 'seed', NOW()),
+       (9225, '调压站台账导出', '调压站档案台账导出', '/gasStationArchive/export', 0, 9220, 'gasArchive:station:export', 2, '', NULL, 0, 'seed', NOW()),
+       (9226, '调压站详情', '管辖管段/设备型号/维护记录', '/gasStationArchive/detail', 0, 9220, 'gasArchive:station:detail', 2, '', NULL, 0, 'seed', NOW()),
+       (9227, '维护记录登记', '调压站维护记录只增登记', '/gasStationArchive/addMaint', 0, 9220, 'gasArchive:station:maint', 2, '', NULL, 0, 'seed', NOW()),
+       (9228, '管辖管段配置', '维护调压站管辖管段范围', '/gasStationArchive/savePipes', 0, 9220, 'gasArchive:station:editPipes', 2, '', NULL, 0, 'seed', NOW());
+
+INSERT IGNORE INTO t_sys_permission_role (id, role_id, permission_id, create_by, create_time)
+VALUES (9200, 488243256161730560, 9200, 'seed', NOW()),
+       (9210, 488243256161730560, 9210, 'seed', NOW()),
+       (9211, 488243256161730560, 9211, 'seed', NOW()),
+       (9212, 488243256161730560, 9212, 'seed', NOW()),
+       (9213, 488243256161730560, 9213, 'seed', NOW()),
+       (9214, 488243256161730560, 9214, 'seed', NOW()),
+       (9215, 488243256161730560, 9215, 'seed', NOW()),
+       (9216, 488243256161730560, 9216, 'seed', NOW()),
+       (9220, 488243256161730560, 9220, 'seed', NOW()),
+       (9221, 488243256161730560, 9221, 'seed', NOW()),
+       (9222, 488243256161730560, 9222, 'seed', NOW()),
+       (9223, 488243256161730560, 9223, 'seed', NOW()),
+       (9224, 488243256161730560, 9224, 'seed', NOW()),
+       (9225, 488243256161730560, 9225, 'seed', NOW()),
+       (9226, 488243256161730560, 9226, 'seed', NOW()),
+       (9227, 488243256161730560, 9227, 'seed', NOW()),
+       (9228, 488243256161730560, 9228, 'seed', NOW());
+
+-- 调压站区域统计按钮权限（追加，授给管理员角色）
+INSERT IGNORE INTO t_sys_permission (id, name, descripion, url, is_blank, pid, perms, type, icon, order_num, visible, create_by, create_time)
+VALUES (9229, '调压站区域统计', '按行政区划统计数量状态', '/gasStationArchive/regionStats', 0, 9220, 'gasArchive:station:stats', 2, '', NULL, 0, 'seed', NOW());
+INSERT IGNORE INTO t_sys_permission_role (id, role_id, permission_id, create_by, create_time)
+VALUES (9229, 488243256161730560, 9229, 'seed', NOW());

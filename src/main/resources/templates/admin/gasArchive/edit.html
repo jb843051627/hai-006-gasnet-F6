@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="include :: header('燃气基础档案编辑')"/>
+</head>
+<body>
+<form class="layui-form" th:object="${archive}">
+    <div class="mainBox">
+        <div class="main-container">
+            <div class="layui-form-item layui-hide">
+                <label class="layui-form-label">ID</label>
+                <div class="layui-input-block">
+                    <input type="text" th:value="*{id}" name="id" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">档案编号</label>
+                <div class="layui-input-inline" style="width: 220px;">
+                    <input type="text" th:value="*{archiveNo}" readonly
+                           class="layui-input layui-disabled">
+                </div>
+                <div class="layui-form-mid layui-word-aux">
+                    状态：
+                    <b th:switch="*{status}">
+                        <span th:case="0" style="color:#5FB878">在用</span>
+                        <span th:case="1" style="color:#FFB800">停用</span>
+                        <span th:case="2" style="color:#FF5722">报废</span>
+                    </b>
+                    （状态请在列表页操作，档案不可删除）
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">档案名称</label>
+                <div class="layui-input-block">
+                    <input type="text" name="archiveName" th:value="*{archiveName}" lay-verify="required"
+                           autocomplete="off" class="layui-input">
+                </div>
+            </div>
+
+            <div th:if="${archiveKind == 'station'}" class="layui-form-item">
+                <label class="layui-form-label">设备型号</label>
+                <div class="layui-input-block">
+                    <input type="text" name="deviceModel" th:value="${deviceModel}" autocomplete="off"
+                           placeholder="调压器/调压柜型号" class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label" th:text="${archiveKind == 'station' ? '站点经度' : '起点经度'}"></label>
+                <div class="layui-input-inline" style="width: 200px;">
+                    <input type="number" step="0.000001" name="startLng" id="startLng" th:value="*{startLng}"
+                           lay-verify="required" autocomplete="off" class="layui-input coord">
+                </div>
+                <label class="layui-form-label" th:text="${archiveKind == 'station' ? '站点纬度' : '起点纬度'}"></label>
+                <div class="layui-input-inline" style="width: 200px;">
+                    <input type="number" step="0.000001" name="startLat" id="startLat" th:value="*{startLat}"
+                           lay-verify="required" autocomplete="off" class="layui-input coord">
+                </div>
+            </div>
+            <div class="layui-form-item" th:if="${archiveKind == 'pipe'}">
+                <label class="layui-form-label">终点经度</label>
+                <div class="layui-input-inline" style="width: 200px;">
+                    <input type="number" step="0.000001" name="endLng" id="endLng" th:value="*{endLng}"
+                           lay-verify="required" autocomplete="off" class="layui-input coord">
+                </div>
+                <label class="layui-form-label">终点纬度</label>
+                <div class="layui-input-inline" style="width: 200px;">
+                    <input type="number" step="0.000001" name="endLat" id="endLat" th:value="*{endLat}"
+                           lay-verify="required" autocomplete="off" class="layui-input coord">
+                </div>
+                <div class="layui-form-mid layui-word-aux">起终点不得完全重合</div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">管径尺寸</label>
+                <div class="layui-input-inline" style="width: 200px;">
+                    <input type="text" name="pipeSpec" th:value="*{pipeSpec}" autocomplete="off"
+                           class="layui-input">
+                </div>
+                <label class="layui-form-label">材质类型</label>
+                <div class="layui-input-inline" style="width: 200px;">
+                    <select name="materialType" lay-search="">
+                        <option value=""></option>
+                        <option value="无缝钢管" th:selected="*{materialType == '无缝钢管'}">无缝钢管</option>
+                        <option value="焊接钢管" th:selected="*{materialType == '焊接钢管'}">焊接钢管</option>
+                        <option value="球墨铸铁管" th:selected="*{materialType == '球墨铸铁管'}">球墨铸铁管</option>
+                        <option value="灰口铸铁管" th:selected="*{materialType == '灰口铸铁管'}">灰口铸铁管</option>
+                        <option value="PE管" th:selected="*{materialType == 'PE管'}">PE管</option>
+                        <option value="钢制" th:selected="*{materialType == '钢制'}">钢制</option>
+                        <option value="其他" th:selected="*{materialType == '其他'}">其他</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">铺设年份</label>
+                <div class="layui-input-inline" style="width: 200px;">
+                    <input type="number" name="layYear" min="1800" th:value="*{layYear}" autocomplete="off"
+                           class="layui-input">
+                </div>
+                <label class="layui-form-label">所属片区</label>
+                <div class="layui-input-inline" style="width: 200px;">
+                    <input type="text" name="sectorName" th:value="*{sectorName}" autocomplete="off"
+                           placeholder="街道以下片区(选填)" class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">所属省</label>
+                <div class="layui-input-inline" style="width: 160px;">
+                    <select name="provinceCode" id="province_select" lay-filter="province_select" lay-search="">
+                        <option value=""></option>
+                        <option th:each="p : ${provinceList}" th:value="${p.provinceCode}"
+                                th:text="${p.provinceName}" th:selected="${p.provinceCode == archive.provinceCode}"></option>
+                    </select>
+                </div>
+                <label class="layui-form-label">所属市</label>
+                <div class="layui-input-inline" style="width: 160px;">
+                    <select name="cityCode" id="city_select" lay-filter="city_select" lay-search=""></select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">区/片区</label>
+                <div class="layui-input-inline" style="width: 160px;">
+                    <select name="areaCode" id="area_select" lay-filter="area_select" lay-verify="required"
+                            lay-search=""></select>
+                </div>
+                <label class="layui-form-label">所属街道</label>
+                <div class="layui-input-inline" style="width: 160px;">
+                    <select name="streetCode" id="street_select" lay-search=""></select>
+                </div>
+            </div>
+
+            <div class="layui-form-item layui-form-text">
+                <label class="layui-form-label">备注</label>
+                <div class="layui-input-block">
+                    <textarea name="remark" class="layui-textarea" th:text="*{remark}"></textarea>
+                </div>
+            </div>
+            <div class="layui-bg-red" style="padding:8px 12px; margin:0 15px 10px; border-radius:4px; display:none;"
+                 id="coord-error"></div>
+        </div>
+    </div>
+    <div class="bottom">
+        <div class="button-container">
+            <button type="submit" class="layui-btn layui-btn-normal layui-btn-sm" lay-submit lay-filter="archive-save">
+                <i class="layui-icon layui-icon-ok"></i> 保存变更
+            </button>
+            <button type="reset" class="layui-btn layui-btn-primary layui-btn-sm">
+                <i class="layui-icon layui-icon-refresh"></i> 重置
+            </button>
+        </div>
+    </div>
+</form>
+<th:block th:include="include :: footer"/>
+<script th:inline="javascript">
+    let ARCHIVE_KIND = [[${archiveKind}]];
+    let MODULE_PATH = rootPath + (ARCHIVE_KIND === 'station' ? "/gasStationArchive/" : "/gasPipeArchive/");
+    let INIT = {
+        cityCode: [[${archive.cityCode}]],
+        areaCode: [[${archive.areaCode}]],
+        streetCode: [[${archive.streetCode}]]
+    };
+
+    layui.use(['form', 'jquery'], function () {
+        let form = layui.form;
+        let $ = layui.jquery;
+
+        form.on('select(province_select)', function () {
+            linkLoad('#city_select', '/ProvinceLinkageController/getCity?pid=', $('#province_select').val(),
+                'cityCode', 'cityName', ['#area_select', '#street_select']);
+        });
+        form.on('select(city_select)', function () {
+            linkLoad('#area_select', '/ProvinceLinkageController/getArea?pid=', $('#city_select').val(),
+                'areaCode', 'areaName', ['#street_select']);
+        });
+        form.on('select(area_select)', function () {
+            linkLoad('#street_select', '/ProvinceLinkageController/getStreet?pid=', $('#area_select').val(),
+                'streetCode', 'streetName', []);
+        });
+
+        function linkLoad(target, url, pid, vf, tf, resets, selectedVal, done) {
+            $(target).empty().append('<option value=""></option>');
+            (resets || []).forEach(function (s) {
+                $(s).empty().append('<option value=""></option>');
+            });
+            if (!pid) {
+                form.render('select');
+                if (done) done();
+                return;
+            }
+            $.get(rootPath + url + pid, function (data) {
+                (data || []).forEach(function (it) {
+                    let sel = (selectedVal && it[vf] === selectedVal) ? ' selected' : '';
+                    $(target).append('<option value="' + it[vf] + '"' + sel + '>' + it[tf] + '</option>');
+                });
+                form.render('select');
+                if (done) done();
+            });
+        }
+
+        // 按 省→市→区→街道 逐级拉取并选中已有值（片区划转时可直接改选）
+        if ($('#province_select').val()) {
+            linkLoad('#city_select', '/ProvinceLinkageController/getCity?pid=', $('#province_select').val(),
+                'cityCode', 'cityName', [], INIT.cityCode, function () {
+                    linkLoad('#area_select', '/ProvinceLinkageController/getArea?pid=', INIT.cityCode,
+                        'areaCode', 'areaName', [], INIT.areaCode, function () {
+                            if (INIT.streetCode) {
+                                linkLoad('#street_select', '/ProvinceLinkageController/getStreet?pid=',
+                                    INIT.areaCode, 'streetCode', 'streetName', [], INIT.streetCode);
+                            }
+                        });
+                });
+        }
+
+        function validateCoords(f) {
+            function num(name) {
+                return f[name] === '' || f[name] == null ? null : Number(f[name]);
+            }
+
+            function inRange(v, min, max) {
+                return v != null && !isNaN(v) && v >= min && v <= max;
+            }
+
+            let slng = num('startLng'), slat = num('startLat');
+            if (!inRange(slng, -180, 180) || !inRange(slat, -90, 90)) {
+                return '站点/起点坐标无效：经度须在 -180~180，纬度须在 -90~90';
+            }
+            if (ARCHIVE_KIND === 'pipe') {
+                let elng = num('endLng'), elat = num('endLat');
+                if (!inRange(elng, -180, 180) || !inRange(elat, -90, 90)) {
+                    return '终点坐标无效：经度须在 -180~180，纬度须在 -90~90';
+                }
+                if (slng === elng && slat === elat) {
+                    return '管道起点坐标与终点坐标不得完全重合';
+                }
+            }
+            if (f.layYear !== '' && f.layYear != null) {
+                let y = Number(f.layYear);
+                if (isNaN(y) || y < 1800 || y > new Date().getFullYear()) {
+                    return '铺设年份须在 1800 ~ ' + new Date().getFullYear() + ' 之间';
+                }
+            }
+            return null;
+        }
+
+        form.on('submit(archive-save)', function (data) {
+            let err = validateCoords(data.field);
+            if (err) {
+                $('#coord-error').text(err).show();
+                return false;
+            }
+            $('#coord-error').hide();
+            $.ajax({
+                url: MODULE_PATH + 'edit',
+                data: data.field, dataType: 'json', type: 'post',
+                success: function (result) {
+                    if (result.code == 200) {
+                        layer.msg(result.msg, {icon: 1, time: 1200}, function () {
+                            parent.layer.close(parent.layer.getFrameIndex(window.name));
+                            parent.layui.table.reload("archive-table");
+                        });
+                    } else {
+                        layer.msg(result.msg, {icon: 2, time: 2000});
+                    }
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>
