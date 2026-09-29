@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="include :: header('行政区划树（省—市—区—街道—片区）')"/>
+</head>
+<body class="pear-container">
+<div class="layui-card">
+    <div class="layui-card-header">
+        地理层级：省 → 市 → 区 → 街道 → 片区（管道/调压站档案挂接在片区节点）
+        <a th:href="@{/gasZone/view}" class="pear-btn pear-btn-sm" style="float:right;">返回片区列表</a>
+    </div>
+    <div class="layui-card-body">
+        <div class="layui-form">
+            <div class="layui-form-item">
+                <div class="layui-input-inline" style="width:260px;">
+                    <input class="layui-input" id="treeKeyword" placeholder="输入节点名称快速定位">
+                </div>
+                <button class="pear-btn pear-btn-primary" id="btnSearch">展开匹配</button>
+                <button class="pear-btn pear-btn-md" id="btnExpandAll">全部展开</button>
+                <button class="pear-btn pear-btn-md" id="btnFoldAll">全部折叠</button>
+                <span class="layui-badge layui-bg-green">在用档案</span>
+                <span class="layui-badge layui-bg-orange">停用</span>
+                <span class="layui-badge layui-bg-gray">片区停用/档案报废</span>
+            </div>
+        </div>
+        <div id="regionTree" style="padding:8px 12px;"></div>
+    </div>
+</div>
+
+<th:block th:include="include :: footer"/>
+<script>
+    layui.use(['tree', 'jquery', 'layer'], function () {
+        let tree = layui.tree, $ = layui.jquery;
+
+        let LEVEL_NAME = {1: '省', 2: '市', 3: '区', 4: '街道', 5: '片区'};
+        let allNodes = [];
+
+        // 后端返回扁平节点 {id,pId,name,level,code,status}，前端组装成树
+        function buildTree(list) {
+            let map = {}, roots = [];
+            for (let i = 0; i < list.length; i++) {
+                let n = list[i];
+                map[n.id] = $.extend({title: label(n), id: n.id, spread: n.level <= 3}, n);
+            }
+            for (let i = 0; i < list.length; i++) {
+                let n = list[i];
+                if (n.pId && map[n.pId]) {
+                    let parent = map[n.pId];
+                    if (!parent.children) parent.children = [];
+                    parent.children.push(map[n.id]);
+                } else if (!n.pId || n.pId === '0') {
+                    roots.push(map[n.id]);
+                }
+            }
+            return roots;
+        }
+
+        function label(n) {
+            let tag = n.status === 1
+                ? ' <span class="layui-badge layui-bg-gray">停用</span>'
+                : '';
+            return '[' + LEVEL_NAME[n.level] + '] ' + n.name + tag;
+        }
+
+        function render(data) {
+            tree.render({
+                elem: '#regionTree',
+                data: data,
+                showCheckbox: false,
+                id: 'regionTreeId',
+                onlyIconControl: true,
+                text: {defaultNodeName: '未命名节点', none: '暂无数据，请先在片区管理中建档'}
+            });
+        }
+
+        $.get(rootPath + '/gasZone/regionTree', function (res) {
+            allNodes = res.data || [];
+            render(buildTree(allNodes));
+        });
+
+        $('#btnExpandAll').on('click', function () {
+            render(buildTree(allNodes)); // 默认三层以下未展开，重新组装为全展开
+            $('#regionTree .layui-tree-iconAdd').each(function () {
+                if ($(this).hasClass('layui-icon-right')) $(this).trigger('click');
+            });
+        });
+        $('#btnFoldAll').on('click', function () {
+            $('#regionTree .layui-tree-iconSub').each(function () {
+                $(this).trigger('click');
+            });
+        });
+        // 名称定位：过滤出含关键字的节点及其祖先链
+        $('#btnSearch').on('click', function () {
+            let kw = $.trim($('#treeKeyword').val());
+            if (!kw) {
+                render(buildTree(allNodes));
+                return;
+            }
+            let keep = {};
+            let byId = {};
+            for (let i = 0; i < allNodes.length; i++) byId[allNodes[i].id] = allNodes[i];
+            for (let i = 0; i < allNodes.length; i++) {
+                if (allNodes[i].name.indexOf(kw) >= 0) {
+                    let cur = allNodes[i];
+                    while (cur) {
+                        keep[cur.id] = true;
+                        cur = cur.pId ? byId[cur.pId] : null;
+                    }
+                }
+            }
+            let sub = allNodes.filter(function (n) {
+                return keep[n.id];
+            });
+            let t = buildTree(sub);
+            render(t);
+            $('#regionTree .layui-tree-iconAdd').each(function () {
+                if ($(this).hasClass('layui-icon-right')) $(this).trigger('click');
+            });
+        });
+    });
+</script>
+</body>
+</html>

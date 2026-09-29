@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('档案行政区划片区')"/>
+</head>
+<body class="pear-container">
+<div class="layui-card">
+    <div class="layui-card-body">
+        <form class="layui-form" action="">
+            <div class="layui-form-item">
+                <label class="layui-form-label">片区代号</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="zoneCode" placeholder="代号模糊" class="layui-input">
+                </div>
+                <label class="layui-form-label">片区名称</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="zoneName" placeholder="名称模糊" class="layui-input">
+                </div>
+                <label class="layui-form-label">省</label>
+                <div class="layui-input-inline" style="width: 130px;">
+                    <select id="province_select" lay-filter="province_select"></select>
+                </div>
+                <label class="layui-form-label">市</label>
+                <div class="layui-input-inline" style="width: 130px;">
+                    <select id="city_select" lay-filter="city_select"></select>
+                </div>
+                <label class="layui-form-label">区</label>
+                <div class="layui-input-inline" style="width: 130px;">
+                    <select name="areaCode" id="area_select" lay-filter="area_select"></select>
+                </div>
+                <label class="layui-form-label">街道</label>
+                <div class="layui-input-inline" style="width: 140px;">
+                    <select name="streetCode" id="street_select" lay-filter="street_select"></select>
+                </div>
+                <label class="layui-form-label">状态</label>
+                <div class="layui-input-inline">
+                    <select name="status">
+                        <option value="">全部</option>
+                        <option value="0">正常</option>
+                        <option value="1">停用</option>
+                    </select>
+                </div>
+                <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="gasZone-query">
+                    <i class="layui-icon layui-icon-search"></i>
+                    查询
+                </button>
+                <button type="reset" class="pear-btn pear-btn-md">
+                    <i class="layui-icon layui-icon-refresh"></i>
+                    重置
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="layui-card">
+    <div class="layui-card-body">
+        <table id="gasZone-table" lay-filter="gasZone-table"></table>
+    </div>
+</div>
+</body>
+
+<script type="text/html" id="gasZone-toolbar">
+    <button shiro:hasPermission="gasZone:add" class="pear-btn pear-btn-primary pear-btn-md" lay-event="add">
+        <i class="layui-icon layui-icon-add-1"></i>
+        新建片区
+    </button>
+    <button shiro:hasPermission="gasZone:view" class="pear-btn pear-btn-normal pear-btn-md" lay-event="tree">
+        <i class="layui-icon layui-icon-template-1"></i>
+        行政区划树
+    </button>
+    <button shiro:hasPermission="gasZone:stat" class="pear-btn pear-btn-warming pear-btn-md" lay-event="stat">
+        <i class="layui-icon layui-icon-chart"></i>
+        区域汇总统计
+    </button>
+</script>
+
+<script type="text/html" id="gasZone-bar">
+    <button shiro:hasPermission="gasZone:edit" class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit" title="编辑片区"><i class="layui-icon layui-icon-edit"></i></button>
+</script>
+
+<script type="text/html" id="gasZone-status">
+    {{# if(d.status == 0){ }}
+    <span class="layui-badge layui-bg-green">正常</span>
+    {{# }else{ }}
+    <span class="layui-badge layui-bg-gray">停用</span>
+    {{# } }}
+</script>
+
+<th:block th:include="include :: footer"/>
+<script>
+    layui.use(['table', 'form', 'jquery'], function () {
+        let table = layui.table, form = layui.form, $ = layui.jquery;
+        let MODULE_PATH = rootPath + "/gasZone/";
+
+        table.render({
+            elem: '#gasZone-table',
+            url: MODULE_PATH + 'list',
+            page: true,
+            method: 'get',
+            cols: [[
+                {title: 'ID', field: 'id', align: 'center', hide: true},
+                {title: '片区代号', field: 'zoneCode', align: 'center', width: 170},
+                {title: '片区名称', field: 'zoneName', align: 'left', minWidth: 180},
+                {title: '所属区', field: 'areaName', align: 'center', width: 140},
+                {title: '所属街道', field: 'streetName', align: 'center', width: 160},
+                {title: '排序', field: 'sort', align: 'center', width: 80},
+                {title: '状态', field: 'status', align: 'center', width: 90, toolbar: '#gasZone-status'},
+                {title: '备注', field: 'remark', align: 'left'},
+                {title: '操作', toolbar: '#gasZone-bar', align: 'center', width: 90, fixed: 'right'}
+            ]],
+            skin: 'line',
+            toolbar: '#gasZone-toolbar'
+        });
+
+        table.on('tool(gasZone-table)', function (obj) {
+            if (obj.event === 'edit') {
+                layer.open({
+                    type: 2, title: '编辑片区', shade: 0.1, area: ['620px', '460px'],
+                    content: MODULE_PATH + 'edit/' + obj.data['id']
+                });
+            }
+        });
+
+        table.on('toolbar(gasZone-table)', function (obj) {
+            if (obj.event === 'add') {
+                layer.open({
+                    type: 2, title: '新建片区', shade: 0.1, area: ['620px', '460px'],
+                    content: MODULE_PATH + 'add'
+                });
+            } else if (obj.event === 'tree') {
+                window.location.href = MODULE_PATH + 'treeView';
+            } else if (obj.event === 'stat') {
+                window.location.href = MODULE_PATH + 'statView';
+            }
+        });
+
+        form.on('submit(gasZone-query)', function (data) {
+            table.reload('gasZone-table', {where: data.field, page: {curr: 1}});
+            return false;
+        });
+
+        // ===== 省→市→区→街道 四级联动（片区本身是查询对象，无需片区下拉） =====
+        let $prov = $('#province_select'), $city = $('#city_select'),
+            $area = $('#area_select'), $street = $('#street_select');
+
+        function fill(sel, list, codeKey, nameKey, ph) {
+            sel.empty().append("<option value=''>" + ph + "</option>");
+            for (let i = 0; i < list.length; i++) {
+                sel.append("<option value='" + list[i][codeKey] + "'>" + list[i][nameKey] + "</option>");
+            }
+            form.render('select');
+        }
+        $.get(rootPath + "/gasZone/allProvinces", function (list) {
+            fill($prov, list, 'provinceCode', 'provinceName', '全部省');
+        });
+        form.on('select(province_select)', function (d) {
+            fill($city, [], 'cityCode', 'cityName', '全部市');
+            fill($area, [], 'areaCode', 'areaName', '全部区');
+            fill($street, [], 'streetCode', 'streetName', '全部街道');
+            if (d.value) {
+                $.get(rootPath + "/ProvinceLinkageController/getCity?pid=" + d.value, function (list) {
+                    fill($city, list, 'cityCode', 'cityName', '全部市');
+                });
+            }
+        });
+        form.on('select(city_select)', function (d) {
+            fill($area, [], 'areaCode', 'areaName', '全部区');
+            fill($street, [], 'streetCode', 'streetName', '全部街道');
+            if (d.value) {
+                $.get(rootPath + "/ProvinceLinkageController/getArea?pid=" + d.value, function (list) {
+                    fill($area, list, 'areaCode', 'areaName', '全部区');
+                });
+            }
+        });
+        form.on('select(area_select)', function (d) {
+            fill($street, [], 'streetCode', 'streetName', '全部街道');
+            if (d.value) {
+                $.get(rootPath + "/ProvinceLinkageController/getStreet?pid=" + d.value, function (list) {
+                    fill($street, list, 'streetCode', 'streetName', '全部街道');
+                });
+            }
+        });
+    });
+</script>
+</html>

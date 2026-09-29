@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="include :: header('新建管道档案')"/>
+</head>
+<body>
+<form class="layui-form">
+    <div class="mainBox">
+        <div class="main-container">
+            <div class="layui-form-item">
+                <label class="layui-form-label">管道编号</label>
+                <div class="layui-input-inline" style="width: 220px;">
+                    <input type="text" name="pipeNo" lay-verify="required" autocomplete="off"
+                           placeholder="全库唯一，建档后不可改" class="layui-input">
+                </div>
+                <label class="layui-form-label">当前状态</label>
+                <div class="layui-input-inline" style="width: 160px;">
+                    <select name="status">
+                        <option value="0" selected>在用</option>
+                        <option value="1">停用</option>
+                        <option value="2">报废</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">管道名称</label>
+                <div class="layui-input-block">
+                    <input type="text" name="pipeName" autocomplete="off" placeholder="如：解放碑东片区中压主干管"
+                           class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">起点坐标</label>
+                <div class="layui-input-inline" style="width: 160px;">
+                    <input type="number" step="0.000001" name="startLng" id="startLng" lay-verify="required"
+                           autocomplete="off" placeholder="经度 73~136" class="layui-input">
+                </div>
+                <div class="layui-input-inline" style="width: 160px;">
+                    <input type="number" step="0.000001" name="startLat" id="startLat" lay-verify="required"
+                           autocomplete="off" placeholder="纬度 3~54" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">终点坐标</label>
+                <div class="layui-input-inline" style="width: 160px;">
+                    <input type="number" step="0.000001" name="endLng" id="endLng" lay-verify="required"
+                           autocomplete="off" placeholder="经度 73~136" class="layui-input">
+                </div>
+                <div class="layui-input-inline" style="width: 160px;">
+                    <input type="number" step="0.000001" name="endLat" id="endLat" lay-verify="required"
+                           autocomplete="off" placeholder="纬度 3~54" class="layui-input">
+                </div>
+                <div class="layui-form-mid layui-word-aux">经纬度须为中国境内有效读数，起终点不得重合</div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">管径(mm)</label>
+                <div class="layui-input-inline" style="width: 150px;">
+                    <input type="number" step="0.01" min="0" name="diameter" autocomplete="off"
+                           placeholder="如 300" class="layui-input">
+                </div>
+                <label class="layui-form-label">材质类型</label>
+                <div class="layui-input-inline" style="width: 160px;">
+                    <select name="material">
+                        <option value="">请选择</option>
+                        <option>钢管</option>
+                        <option>PE管</option>
+                        <option>铸铁管</option>
+                        <option>球墨铸铁管</option>
+                        <option>镀锌钢管</option>
+                        <option>其他</option>
+                    </select>
+                </div>
+                <label class="layui-form-label">铺设年份</label>
+                <div class="layui-input-inline" style="width: 120px;">
+                    <input type="number" name="layYear" lay-verify="required" min="1900" autocomplete="off"
+                           placeholder="如 2015" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">压力级制</label>
+                <div class="layui-input-inline" style="width: 150px;">
+                    <select name="pressureLevel">
+                        <option value="">请选择</option>
+                        <option>高压</option>
+                        <option>次高压</option>
+                        <option>中压</option>
+                        <option>低压</option>
+                    </select>
+                </div>
+                <label class="layui-form-label">管线长度(m)</label>
+                <div class="layui-input-inline" style="width: 150px;">
+                    <input type="number" step="0.01" min="0" name="lengthM" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">所属区域</label>
+                <div class="layui-input-inline" style="width: 130px;">
+                    <select id="province_select" lay-filter="province_select"></select>
+                </div>
+                <div class="layui-input-inline" style="width: 130px;">
+                    <select id="city_select" lay-filter="city_select"></select>
+                </div>
+                <div class="layui-input-inline" style="width: 130px;">
+                    <select id="area_select" lay-filter="area_select"></select>
+                </div>
+                <div class="layui-input-inline" style="width: 140px;">
+                    <select id="street_select" lay-filter="street_select"></select>
+                </div>
+                <div class="layui-input-inline" style="width: 150px;">
+                    <select id="zone_select" name="zoneId" lay-verify="required"></select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">备注</label>
+                <div class="layui-input-block">
+                    <textarea name="remark" class="layui-textarea"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="bottom">
+        <div class="button-container">
+            <button type="submit" class="layui-btn layui-btn-normal layui-btn-sm" lay-submit lay-filter="pipeline-save">
+                <i class="layui-icon layui-icon-ok"></i>
+                建档保存
+            </button>
+            <button type="reset" class="layui-btn layui-btn-primary layui-btn-sm">
+                <i class="layui-icon layui-icon-refresh"></i>
+                重置
+            </button>
+        </div>
+    </div>
+</form>
+<th:block th:include="include :: footer"/>
+<script th:src="@{/static/admin/js/gasRegionLinkage.js}"></script>
+<script>
+    layui.use(['form', 'jquery'], function () {
+        let form = layui.form;
+        let $ = layui.jquery;
+        let MODULE_PATH = rootPath + "/gasPipeline/";
+
+        GasRegionLinkage.init({form: form, $: $});
+
+        // 前端先做坐标范围校验，后端兜底
+        function coordOk(lng, lat) {
+            return lng !== '' && lat !== '' && Number(lng) >= 73 && Number(lng) < 136
+                && Number(lat) >= 3 && Number(lat) < 54;
+        }
+
+        form.on('submit(pipeline-save)', function (data) {
+            let f = data.field;
+            if (!coordOk(f.startLng, f.startLat)) {
+                layer.msg('起点坐标无效（经度73~136、纬度3~54）', {icon: 2});
+                return false;
+            }
+            if (!coordOk(f.endLng, f.endLat)) {
+                layer.msg('终点坐标无效（经度73~136、纬度3~54）', {icon: 2});
+                return false;
+            }
+            if (f.startLng === f.endLng && f.startLat === f.endLat) {
+                layer.msg('起点与终点坐标重合，不构成有效管段', {icon: 2});
+                return false;
+            }
+            $.ajax({
+                url: MODULE_PATH + 'add',
+                data: f, dataType: 'json', type: 'post',
+                success: function (result) {
+                    if (result.code == 200) {
+                        layer.msg(result.msg, {icon: 1, time: 1500}, function () {
+                            parent.layer.close(parent.layer.getFrameIndex(window.name));
+                            parent.layui.table.reload("gasPipeline-table");
+                        });
+                    } else {
+                        layer.msg(result.msg, {icon: 2, time: 2200});
+                    }
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

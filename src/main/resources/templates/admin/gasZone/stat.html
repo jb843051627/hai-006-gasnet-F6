@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="include :: header('区域档案汇总统计')"/>
+    <style>
+        .stat-level-1 {font-weight: bold; background: #f2f7ff;}
+        .stat-level-2 {font-weight: bold; background: #f7faff;}
+        .stat-level-3 {background: #fbfdff;}
+        .stat-num {font-weight: bold;}
+        .stat-active {color: #16b777;}
+        .stat-stop {color: #ff8c1a;}
+        .stat-scrap {color: #909399;}
+    </style>
+</head>
+<body class="pear-container">
+<div class="layui-card">
+    <div class="layui-card-body">
+        <form class="layui-form" action="">
+            <div class="layui-form-item">
+                <label class="layui-form-label">区代号</label>
+                <div class="layui-input-inline" style="width: 180px;">
+                    <input type="text" name="areaCode" placeholder="如 500103" class="layui-input">
+                </div>
+                <label class="layui-form-label">街道代号</label>
+                <div class="layui-input-inline" style="width: 180px;">
+                    <input type="text" name="streetCode" placeholder="如 500103001" class="layui-input">
+                </div>
+                <label class="layui-form-label">片区名称</label>
+                <div class="layui-input-inline" style="width: 200px;">
+                    <input type="text" name="zoneName" placeholder="片区名模糊" class="layui-input">
+                </div>
+                <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="stat-query">
+                    <i class="layui-icon layui-icon-search"></i>
+                    统计
+                </button>
+                <button type="reset" class="pear-btn pear-btn-md">
+                    <i class="layui-icon layui-icon-refresh"></i>
+                    重置
+                </button>
+                <a th:href="@{/gasZone/view}" class="pear-btn pear-btn-md">返回片区列表</a>
+            </div>
+        </form>
+        <blockquote class="layui-elem-quote" style="margin-bottom:10px;">
+            统计口径：所有在档档案（停用/报废为状态位而非删除，始终计入所属区域），按 片区→街道→区→市→省 五级汇总，
+            市/省数量由下级上卷累加。总数 = 在用 + 停用 + 报废 = 管道数 + 调压站数。
+        </blockquote>
+    </div>
+</div>
+<div class="layui-card">
+    <div class="layui-card-body">
+        <table id="stat-table" lay-filter="stat-table"></table>
+    </div>
+</div>
+<th:block th:include="include :: footer"/>
+<script>
+    layui.use(['table', 'form', 'jquery'], function () {
+        let table = layui.table, form = layui.form, $ = layui.jquery;
+        let MODULE_PATH = rootPath + "/gasZone/";
+        let LEVEL = {1: '省', 2: '市', 3: '区', 4: '街道', 5: '片区'};
+
+        function render(params) {
+            $.get(MODULE_PATH + 'regionStats', params || {}, function (res) {
+                let rows = res.data || [];
+                rows.sort(function (a, b) {
+                    if (a.level !== b.level) return a.level - b.level;
+                    return (a.regionCode || '').localeCompare(b.regionCode || '');
+                });
+                table.render({
+                    elem: '#stat-table',
+                    data: rows,
+                    page: {limit: 200, limits: [50, 100, 200, 500]},
+                    cols: [[
+                        {title: '层级', field: 'level', width: 90, align: 'center', templet: function (d) {
+                                let indent = '';
+                                for (let i = 1; i < d.level; i++) indent += '　';
+                                return indent + LEVEL[d.level];
+                            }, style: function (d) {
+                                return d.level <= 2 ? 'font-weight:bold;' : '';
+                            }},
+                        {title: '区域名称', field: 'regionName', width: 240, templet: function (d) {
+                                let prefix = {1: '◈ ', 2: '◇ ', 3: '● ', 4: '○ ', 5: '· '};
+                                return (prefix[d.level] || '') + (d.regionName || d.regionCode || '（未知）');
+                            }},
+                        {title: '区域代号', field: 'regionCode', width: 160, align: 'center'},
+                        {title: '管道数', field: 'pipeCount', width: 100, align: 'center', sort: true},
+                        {title: '调压站数', field: 'stationCount', width: 100, align: 'center', sort: true},
+                        {title: '档案总数', align: 'center', width: 110, sort: true, templet: function (d) {
+                                return '<span class="stat-num">' + (d.inUse + d.stopped + d.scrapped) + '</span>';
+                            }},
+                        {title: '在用', field: 'inUse', width: 100, align: 'center', sort: true, templet: function (d) {
+                                return '<span class="stat-num stat-active">' + d.inUse + '</span>';
+                            }},
+                        {title: '停用', field: 'stopped', width: 100, align: 'center', sort: true, templet: function (d) {
+                                return '<span class="stat-num stat-stop">' + d.stopped + '</span>';
+                            }},
+                        {title: '报废', field: 'scrapped', width: 100, align: 'center', sort: true, templet: function (d) {
+                                return '<span class="stat-num stat-scrap">' + d.scrapped + '</span>';
+                            }}
+                    ]],
+                    skin: 'line',
+                    size: 'sm',
+                    defaultToolbar: ['filter', 'print', 'exports']
+                });
+            });
+        }
+
+        render({});
+
+        form.on('submit(stat-query)', function (data) {
+            render(data.field);
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

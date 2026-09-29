@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="include :: header('编辑片区')"/>
+</head>
+<body>
+<form class="layui-form">
+    <input type="hidden" name="id" th:value="${zone.id}">
+    <div class="mainBox">
+        <div class="main-container">
+            <div class="layui-form-item">
+                <label class="layui-form-label">片区代号</label>
+                <div class="layui-input-block">
+                    <input type="text" name="zoneCode" th:value="${zone.zoneCode}" readonly
+                           class="layui-input layui-disabled">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">片区名称</label>
+                <div class="layui-input-block">
+                    <input type="text" name="zoneName" th:value="${zone.zoneName}" lay-verify="required"
+                           class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">所属街道</label>
+                <div class="layui-input-inline" style="width: 150px;">
+                    <select id="province_select" lay-filter="province_select"></select>
+                </div>
+                <div class="layui-input-inline" style="width: 150px;">
+                    <select id="city_select" lay-filter="city_select"></select>
+                </div>
+                <div class="layui-input-inline" style="width: 150px;">
+                    <select id="area_select" lay-filter="area_select"></select>
+                </div>
+                <div class="layui-input-inline" style="width: 170px;">
+                    <select id="street_select" name="streetCode" lay-verify="required"></select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">排序号</label>
+                <div class="layui-input-inline" style="width: 120px;">
+                    <input type="number" name="sort" th:value="${zone.sort}" class="layui-input">
+                </div>
+                <label class="layui-form-label">状态</label>
+                <div class="layui-input-inline" style="width: 140px;">
+                    <select name="status">
+                        <option value="0" th:selected="${zone.status == 0}">正常</option>
+                        <option value="1" th:selected="${zone.status == 1}">停用</option>
+                    </select>
+                </div>
+                <div class="layui-form-mid layui-word-aux">停用后不可新建/划转档案，在档档案不受影响</div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">备注</label>
+                <div class="layui-input-block">
+                    <textarea name="remark" class="layui-textarea" th:text="${zone.remark}"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="bottom">
+        <div class="button-container">
+            <button type="submit" class="layui-btn layui-btn-normal layui-btn-sm" lay-submit lay-filter="zone-save">
+                <i class="layui-icon layui-icon-ok"></i>
+                保存变更
+            </button>
+        </div>
+    </div>
+</form>
+<th:block th:include="include :: footer"/>
+<script th:inline="javascript">
+    layui.use(['form', 'jquery'], function () {
+        let form = layui.form, $ = layui.jquery;
+        let MODULE_PATH = rootPath + "/gasZone/";
+        let $prov = $('#province_select'), $city = $('#city_select'),
+            $area = $('#area_select'), $street = $('#street_select');
+        let selected = {
+            provinceCode: [[${zone.provinceCode}]],
+            cityCode: [[${zone.cityCode}]],
+            areaCode: [[${zone.areaCode}]],
+            streetCode: [[${zone.streetCode}]]
+        };
+
+        function fill(sel, list, codeKey, nameKey, ph, picked) {
+            sel.empty().append("<option value=''>" + ph + "</option>");
+            for (let i = 0; i < list.length; i++) {
+                let on = (picked && String(list[i][codeKey]) === String(picked)) ? " selected" : "";
+                sel.append("<option value='" + list[i][codeKey] + "'" + on + ">" + list[i][nameKey] + "</option>");
+            }
+            form.render('select');
+        }
+        // 回显：省→市→区→街道 逐层加载并选中
+        $.get(rootPath + "/gasZone/allProvinces", function (list) {
+            fill($prov, list, 'provinceCode', 'provinceName', '请选择省', selected.provinceCode);
+            if (!selected.provinceCode) return;
+            $.get(rootPath + "/ProvinceLinkageController/getCity?pid=" + selected.provinceCode, function (cs) {
+                fill($city, cs, 'cityCode', 'cityName', '请选择市', selected.cityCode);
+                if (!selected.cityCode) return;
+                $.get(rootPath + "/ProvinceLinkageController/getArea?pid=" + selected.cityCode, function (as) {
+                    fill($area, as, 'areaCode', 'areaName', '请选择区', selected.areaCode);
+                    if (!selected.areaCode) return;
+                    $.get(rootPath + "/ProvinceLinkageController/getStreet?pid=" + selected.areaCode, function (ss) {
+                        fill($street, ss, 'streetCode', 'streetName', '请选择街道', selected.streetCode);
+                    });
+                });
+            });
+        });
+        form.on('select(province_select)', function (d) {
+            fill($city, [], 'cityCode', 'cityName', '请选择市');
+            fill($area, [], 'areaCode', 'areaName', '请选择区');
+            fill($street, [], 'streetCode', 'streetName', '请选择街道');
+            if (d.value) {
+                $.get(rootPath + "/ProvinceLinkageController/getCity?pid=" + d.value, function (list) {
+                    fill($city, list, 'cityCode', 'cityName', '请选择市');
+                });
+            }
+        });
+        form.on('select(city_select)', function (d) {
+            fill($area, [], 'areaCode', 'areaName', '请选择区');
+            fill($street, [], 'streetCode', 'streetName', '请选择街道');
+            if (d.value) {
+                $.get(rootPath + "/ProvinceLinkageController/getArea?pid=" + d.value, function (list) {
+                    fill($area, list, 'areaCode', 'areaName', '请选择区');
+                });
+            }
+        });
+        form.on('select(area_select)', function (d) {
+            fill($street, [], 'streetCode', 'streetName', '请选择街道');
+            if (d.value) {
+                $.get(rootPath + "/ProvinceLinkageController/getStreet?pid=" + d.value, function (list) {
+                    fill($street, list, 'streetCode', 'streetName', '请选择街道');
+                });
+            }
+        });
+
+        form.on('submit(zone-save)', function (data) {
+            $.ajax({
+                url: MODULE_PATH + 'edit',
+                data: data.field, dataType: 'json', type: 'post',
+                success: function (res) {
+                    if (res.code == 200) {
+                        layer.msg(res.msg, {icon: 1, time: 1500}, function () {
+                            parent.layer.close(parent.layer.getFrameIndex(window.name));
+                            parent.layui.table.reload("gasZone-table");
+                        });
+                    } else {
+                        layer.msg(res.msg, {icon: 2, time: 2200});
+                    }
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

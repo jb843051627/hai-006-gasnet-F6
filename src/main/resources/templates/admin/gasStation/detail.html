@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('调压站档案详情')"/>
+    <style>
+        .archive-head {padding: 10px 5px; line-height: 28px; color: #5f6c75;}
+        .archive-head b {color: #1f2d3d; margin-right: 6px;}
+        .archive-head .layui-badge {margin-left: 8px;}
+    </style>
+</head>
+<body class="pear-container" style="padding: 12px;">
+<div class="layui-card">
+    <div class="layui-card-header">档案基础信息</div>
+    <div class="layui-card-body">
+        <div class="archive-head">
+            <b>编号：</b><span th:text="${station.stationNo}"></span>
+            <b style="margin-left:24px;">名称：</b><span th:text="${station.stationName}"></span>
+            <b style="margin-left:24px;">状态：</b>
+            <span th:if="${station.status == 0}" class="layui-badge layui-bg-green">在用</span>
+            <span th:if="${station.status == 1}" class="layui-badge layui-bg-orange">停用</span>
+            <span th:if="${station.status == 2}" class="layui-badge layui-bg-gray">报废</span>
+        </div>
+        <div class="archive-head">
+            <b>站址坐标：</b><span th:text="${station.lng}"></span>, <span th:text="${station.lat}"></span>
+            <b style="margin-left:24px;">建成年份：</b><span th:text="${station.layYear}"></span>
+            <b style="margin-left:24px;">管径：</b><span th:text="${station.diameter}"></span>
+            <b style="margin-left:24px;">材质：</b><span th:text="${station.material}"></span>
+        </div>
+        <div class="archive-head">
+            <b>设备型号：</b><span th:text="${station.deviceModel}"></span>
+            <b style="margin-left:24px;">设备厂家：</b><span th:text="${station.manufacturer}"></span>
+            <b style="margin-left:24px;">设计压力：</b><span th:text="${station.designPressure}"></span> MPa
+            <b style="margin-left:24px;">出口压力：</b><span th:text="${station.outletPressure}"></span> MPa
+            <b style="margin-left:24px;">额定流量：</b><span th:text="${station.ratedFlow}"></span> m³/h
+        </div>
+        <div class="archive-head">
+            <b>所属区域：</b><span th:text="${station.areaName}"></span> / <span th:text="${station.streetName}"></span> / <span th:text="${station.zoneName}"></span>
+            <b style="margin-left:24px;">建档时间：</b><span th:if="${station.createTime != null}" th:text="${#dates.format(station.createTime, 'yyyy-MM-dd HH:mm:ss')}"></span>
+            <b style="margin-left:24px;">备注：</b><span th:text="${station.remark}"></span>
+        </div>
+    </div>
+</div>
+
+<div class="layui-card">
+    <div class="layui-card-header">管辖管段范围</div>
+    <div class="layui-card-body">
+        <table id="station-pipe-table" lay-filter="station-pipe-table"></table>
+    </div>
+</div>
+
+<div class="layui-card">
+    <div class="layui-card-header">设备维护记录（履历只增不改）</div>
+    <div class="layui-card-body">
+        <table id="maint-table" lay-filter="maint-table"></table>
+    </div>
+</div>
+
+<script type="text/html" id="station-pipe-toolbar">
+    <button shiro:hasPermission="gasStation:edit" class="pear-btn pear-btn-primary pear-btn-md" lay-event="addPipe">
+        <i class="layui-icon layui-icon-add-1"></i>
+        挂接管段
+    </button>
+    <button shiro:hasPermission="gasStation:edit" class="pear-btn pear-btn-success pear-btn-md" lay-event="savePipes">
+        <i class="layui-icon layui-icon-ok"></i>
+        保存管辖范围
+    </button>
+</script>
+
+<script type="text/html" id="station-pipe-bar">
+    <button shiro:hasPermission="gasStation:edit" class="pear-btn pear-btn-danger pear-btn-sm" lay-event="removePipe" title="解除管辖（不删除管道档案）"><i class="layui-icon layui-icon-delete"></i></button>
+</script>
+
+<script type="text/html" id="pipe-status-tpl">
+    {{# if(d.pipeStatus == 0){ }}<span class="layui-badge layui-bg-green">在用</span>
+    {{# }else if(d.pipeStatus == 1){ }}<span class="layui-badge layui-bg-orange">停用</span>
+    {{# }else if(d.pipeStatus == 2){ }}<span class="layui-badge layui-bg-gray">报废</span>{{# } }}
+</script>
+
+<script type="text/html" id="maint-toolbar">
+    <button shiro:hasPermission="gasStation:maint" class="pear-btn pear-btn-primary pear-btn-md" lay-event="addMaint">
+        <i class="layui-icon layui-icon-add-1"></i>
+        登记维护记录
+    </button>
+</script>
+
+<th:block th:include="include :: footer"/>
+<script th:inline="javascript">
+    layui.use(['table', 'jquery', 'laydate', 'form'], function () {
+        let table = layui.table, $ = layui.jquery, laydate = layui.laydate, form = layui.form;
+        let STATION_ID = [[${station.id}]];
+        let STATION_PATH = rootPath + "/gasStation/";
+        let PIPE_PATH = rootPath + "/gasPipeline/";
+
+        // ===== 管辖管段 =====
+        let pipeData = [];
+        table.render({
+            elem: '#station-pipe-table',
+            data: pipeData,
+            page: false,
+            cols: [[
+                {title: '管道ID', field: 'pipelineId', hide: true},
+                {title: '管道编号', field: 'pipeNo', width: 160},
+                {title: '管道名称', field: 'pipeName'},
+                {title: '管道状态', field: 'pipeStatus', width: 100, align: 'center', toolbar: '#pipe-status-tpl'},
+                {title: '管辖范围说明（阀井区间/桩号）', field: 'scopeDesc', width: 320, edit: 'text'},
+                {title: '操作', toolbar: '#station-pipe-bar', width: 90, align: 'center'}
+            ]],
+            skin: 'line',
+            toolbar: '#station-pipe-toolbar'
+        });
+
+        function reloadPipes() {
+            $.get(STATION_PATH + 'pipes/' + STATION_ID, function (res) {
+                pipeData = res.data || [];
+                table.reload('station-pipe-table', {data: pipeData});
+            });
+        }
+        reloadPipes();
+
+        table.on('tool(station-pipe-table)', function (obj) {
+            if (obj.event === 'removePipe') {
+                obj.del();
+            }
+        });
+
+        // 挂接：弹窗内按编号/名称检索管道，多选追加
+        table.on('toolbar(station-pipe-table)', function (obj) {
+            if (obj.event === 'addPipe') {
+                layer.open({
+                    type: 1, title: '选择要管辖的管段（可重复搜索、多次添加）', shade: 0.1,
+                    area: ['760px', '520px'],
+                    content: $('#pickPipeLayer').html(),
+                    success: function (layero) {
+                        let $box = layero;
+                        function search(kw) {
+                            $.get(PIPE_PATH + 'allOptions', {keyword: kw || ''}, function (list) {
+                                let exist = {};
+                                let rows = table.cache['station-pipe-table'] || [];
+                                for (let i = 0; i < rows.length; i++) {
+                                    exist[rows[i].pipelineId] = true;
+                                }
+                                let html = '';
+                                for (let i = 0; i < list.length; i++) {
+                                    let p = list[i];
+                                    if (exist[p.id]) continue;
+                                    html += "<tr><td><input type='checkbox' class='pick-pipe' value='" + p.id + "'></td>"
+                                        + "<td>" + p.pipeNo + "</td><td>" + (p.pipeName || '') + "</td><td>" + (p.zoneName || '') + "</td></tr>";
+                                }
+                                $box.find('.pick-pipe-tbody').html(html || "<tr><td colspan='4' style='text-align:center;color:#999;'>无匹配或已全部挂接</td></tr>");
+                            });
+                        }
+                        search('');
+                        $box.find('.pick-search-btn').on('click', function () {
+                            search($box.find('.pick-keyword').val());
+                        });
+                        $box.find('.pick-confirm').on('click', function () {
+                            let chosen = [];
+                            $box.find('.pick-pipe:checked').each(function () {
+                                chosen.push($(this).val());
+                            });
+                            if (chosen.length === 0) {
+                                layer.msg('请先勾选管段', {icon: 2});
+                                return;
+                            }
+                            $.get(PIPE_PATH + 'allOptions', function (all) {
+                                let map = {};
+                                for (let i = 0; i < all.length; i++) map[all[i].id] = all[i];
+                                let append = [];
+                                for (let i = 0; i < chosen.length; i++) {
+                                    let p = map[chosen[i]];
+                                    if (p) append.push({
+                                        pipelineId: p.id, pipeNo: p.pipeNo, pipeName: p.pipeName,
+                                        pipeStatus: p.status, scopeDesc: ''
+                                    });
+                                }
+                                table.reload('station-pipe-table', {
+                                    data: (table.cache['station-pipe-table'] || []).concat(append)
+                                });
+                                layer.closeAll();
+                            });
+                        });
+                    }
+                });
+            } else if (obj.event === 'savePipes') {
+                let rows = table.cache['station-pipe-table'] || [];
+                let payload = [];
+                for (let i = 0; i < rows.length; i++) {
+                    payload.push({pipelineId: rows[i].pipelineId, scopeDesc: rows[i].scopeDesc || ''});
+                }
+                $.ajax({
+                    url: STATION_PATH + 'savePipes?stationId=' + STATION_ID,
+                    type: 'post', contentType: 'application/json', data: JSON.stringify(payload),
+                    success: function (res) {
+                        if (res.code == 200) {
+                            layer.msg('管辖范围已保存', {icon: 1, time: 1500}, reloadPipes);
+                        } else {
+                            layer.msg(res.msg, {icon: 2});
+                        }
+                    }
+                });
+            }
+        });
+
+        // ===== 维护履历 =====
+        table.render({
+            elem: '#maint-table',
+            url: STATION_PATH + 'maintRecords/' + STATION_ID,
+            parseData: function (res) {
+                return {code: 0, msg: '', count: (res.data || []).length, data: res.data || []};
+            },
+            page: false,
+            cols: [[
+                {title: '维护时间', field: 'maintTime', width: 170},
+                {title: '维护类型', field: 'maintType', width: 110, align: 'center'},
+                {title: '设备型号', field: 'deviceModel', width: 170},
+                {title: '维护内容', field: 'content'},
+                {title: '维护人', field: 'maintainer', width: 100, align: 'center'},
+                {title: '下次计划时间', field: 'nextMaintTime', width: 170, align: 'center'},
+                {title: '登记人', field: 'createBy', width: 100, align: 'center'}
+            ]],
+            skin: 'line',
+            toolbar: '#maint-toolbar'
+        });
+
+        table.on('toolbar(maint-table)', function (obj) {
+            if (obj.event === 'addMaint') {
+                layer.open({
+                    type: 1, title: '登记维护记录', shade: 0.1, area: ['640px', '560px'],
+                    content: $('#maintLayer').html(),
+                    success: function (layero) {
+                        form.render('select');
+                        layero.find('#maintTime').each(function () {
+                            laydate.render({elem: this, type: 'datetime', format: 'yyyy-MM-dd HH:mm:ss'});
+                        });
+                        layero.find('#nextMaintTime').each(function () {
+                            laydate.render({elem: this, type: 'datetime', format: 'yyyy-MM-dd HH:mm:ss'});
+                        });
+                        layero.find('.maint-submit').on('click', function () {
+                            let f = {};
+                            layero.find('.maint-field').each(function () {
+                                f[$(this).attr('name')] = $(this).val();
+                            });
+                            f.stationId = STATION_ID;
+                            if (!f.maintTime || !f.maintType || !f.content) {
+                                layer.msg('维护时间、类型、内容为必填', {icon: 2});
+                                return;
+                            }
+                            $.post(STATION_PATH + 'addMaint', f, function (res) {
+                                if (res.code == 200) {
+                                    layer.msg('已登记（履历不可修改）', {icon: 1, time: 1500}, function () {
+                                        layer.closeAll();
+                                        table.reload('maint-table', {url: STATION_PATH + 'maintRecords/' + STATION_ID});
+                                    });
+                                } else {
+                                    layer.msg(res.msg, {icon: 2});
+                                }
+                            });
+                        });
+                    }
+                });
+            }
+        });
+    });
+</script>
+
+<!-- 挂接管段弹层模板 -->
+<script type="text/html" id="pickPipeLayer">
+    <div style="padding:12px;">
+        <div class="layui-form-item">
+            <div class="layui-input-inline" style="width:240px;">
+                <input class="layui-input pick-keyword" placeholder="管道编号/名称关键字">
+            </div>
+            <button class="pear-btn pear-btn-primary pick-search-btn">检索</button>
+        </div>
+        <table class="layui-table" style="margin:0;">
+            <thead><tr><th style="width:50px;">选</th><th style="width:160px;">管道编号</th><th>管道名称</th><th style="width:130px;">片区</th></tr></thead>
+            <tbody class="pick-pipe-tbody"></tbody>
+        </table>
+        <div style="margin-top:12px;text-align:right;">
+            <button class="pear-btn pear-btn-success pick-confirm">添加选中管段</button>
+        </div>
+    </div>
+</script>
+
+<!-- 维护记录弹层模板 -->
+<script type="text/html" id="maintLayer">
+    <form class="layui-form" style="padding:16px 20px;">
+        <div class="layui-form-item">
+            <label class="layui-form-label">维护时间</label>
+            <div class="layui-input-block">
+                <input class="layui-input maint-field" id="maintTime" name="maintTime" placeholder="yyyy-MM-dd HH:mm:ss">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">维护类型</label>
+            <div class="layui-input-block">
+                <select class="maint-field" name="maintType">
+                    <option value="">请选择</option>
+                    <option>日常巡检</option>
+                    <option>定期保养</option>
+                    <option>故障维修</option>
+                    <option>大修改造</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">维护人</label>
+            <div class="layui-input-block">
+                <input class="layui-input maint-field" name="maintainer">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">维护内容</label>
+            <div class="layui-input-block">
+                <textarea class="layui-textarea maint-field" name="content" placeholder="更换部件/调试情况等"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">下次计划</label>
+            <div class="layui-input-block">
+                <input class="layui-input maint-field" id="nextMaintTime" name="nextMaintTime">
+            </div>
+        </div>
+        <div class="layui-form-item" style="text-align:right;">
+            <button type="button" class="pear-btn pear-btn-success maint-submit">提交登记</button>
+        </div>
+    </form>
+</script>
+</body>
+</html>

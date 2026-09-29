@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="include :: header('新建调压站档案')"/>
+</head>
+<body>
+<form class="layui-form">
+    <div class="mainBox">
+        <div class="main-container">
+            <div class="layui-form-item">
+                <label class="layui-form-label">调压站编号</label>
+                <div class="layui-input-inline" style="width: 220px;">
+                    <input type="text" name="stationNo" lay-verify="required" autocomplete="off"
+                           placeholder="全库唯一，建档后不可改" class="layui-input">
+                </div>
+                <label class="layui-form-label">当前状态</label>
+                <div class="layui-input-inline" style="width: 160px;">
+                    <select name="status">
+                        <option value="0" selected>在用</option>
+                        <option value="1">停用</option>
+                        <option value="2">报废</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">调压站名称</label>
+                <div class="layui-input-block">
+                    <input type="text" name="stationName" autocomplete="off" placeholder="如：解放碑东调压站"
+                           class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">站址坐标</label>
+                <div class="layui-input-inline" style="width: 160px;">
+                    <input type="number" step="0.000001" name="lng" lay-verify="required" autocomplete="off"
+                           placeholder="经度 73~136" class="layui-input">
+                </div>
+                <div class="layui-input-inline" style="width: 160px;">
+                    <input type="number" step="0.000001" name="lat" lay-verify="required" autocomplete="off"
+                           placeholder="纬度 3~54" class="layui-input">
+                </div>
+                <div class="layui-form-mid layui-word-aux">须为中国境内有效读数</div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">管径描述</label>
+                <div class="layui-input-inline" style="width: 170px;">
+                    <input type="text" name="diameter" autocomplete="off" placeholder="如 DN200/DN150"
+                           class="layui-input">
+                </div>
+                <label class="layui-form-label">主体材质</label>
+                <div class="layui-input-inline" style="width: 150px;">
+                    <select name="material">
+                        <option value="">请选择</option>
+                        <option>钢管</option>
+                        <option>PE管</option>
+                        <option>铸铁管</option>
+                        <option>球墨铸铁管</option>
+                        <option>其他</option>
+                    </select>
+                </div>
+                <label class="layui-form-label">建成年份</label>
+                <div class="layui-input-inline" style="width: 120px;">
+                    <input type="number" name="layYear" min="1900" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">设备型号</label>
+                <div class="layui-input-inline" style="width: 200px;">
+                    <input type="text" name="deviceModel" autocomplete="off" placeholder="如 RTZ-200/0.4AQ"
+                           class="layui-input">
+                </div>
+                <label class="layui-form-label">设备厂家</label>
+                <div class="layui-input-inline" style="width: 200px;">
+                    <input type="text" name="manufacturer" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">设计压力(MPa)</label>
+                <div class="layui-input-inline" style="width: 140px;">
+                    <input type="number" step="0.01" min="0" name="designPressure" autocomplete="off"
+                           class="layui-input">
+                </div>
+                <label class="layui-form-label">出口压力(MPa)</label>
+                <div class="layui-input-inline" style="width: 140px;">
+                    <input type="number" step="0.0001" min="0" name="outletPressure" autocomplete="off"
+                           class="layui-input">
+                </div>
+                <label class="layui-form-label">额定流量(m³/h)</label>
+                <div class="layui-input-inline" style="width: 140px;">
+                    <input type="number" step="0.01" min="0" name="ratedFlow" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">所属区域</label>
+                <div class="layui-input-inline" style="width: 130px;">
+                    <select id="province_select" lay-filter="province_select"></select>
+                </div>
+                <div class="layui-input-inline" style="width: 130px;">
+                    <select id="city_select" lay-filter="city_select"></select>
+                </div>
+                <div class="layui-input-inline" style="width: 130px;">
+                    <select id="area_select" lay-filter="area_select"></select>
+                </div>
+                <div class="layui-input-inline" style="width: 140px;">
+                    <select id="street_select" lay-filter="street_select"></select>
+                </div>
+                <div class="layui-input-inline" style="width: 150px;">
+                    <select id="zone_select" name="zoneId" lay-verify="required"></select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">备注</label>
+                <div class="layui-input-block">
+                    <textarea name="remark" class="layui-textarea"></textarea>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block layui-word-aux">
+                    管辖管段范围与设备维护记录请在档案建成后，于列表页“详情”中挂接/登记。
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="bottom">
+        <div class="button-container">
+            <button type="submit" class="layui-btn layui-btn-normal layui-btn-sm" lay-submit lay-filter="station-save">
+                <i class="layui-icon layui-icon-ok"></i>
+                建档保存
+            </button>
+            <button type="reset" class="layui-btn layui-btn-primary layui-btn-sm">
+                <i class="layui-icon layui-icon-refresh"></i>
+                重置
+            </button>
+        </div>
+    </div>
+</form>
+<th:block th:include="include :: footer"/>
+<script th:src="@{/static/admin/js/gasRegionLinkage.js}"></script>
+<script>
+    layui.use(['form', 'jquery'], function () {
+        let form = layui.form;
+        let $ = layui.jquery;
+        let MODULE_PATH = rootPath + "/gasStation/";
+
+        GasRegionLinkage.init({form: form, $: $});
+
+        form.on('submit(station-save)', function (data) {
+            let f = data.field;
+            if (f.lng === '' || f.lat === '' || Number(f.lng) < 73 || Number(f.lng) >= 136
+                || Number(f.lat) < 3 || Number(f.lat) >= 54) {
+                layer.msg('站址坐标无效（经度73~136、纬度3~54）', {icon: 2});
+                return false;
+            }
+            $.ajax({
+                url: MODULE_PATH + 'add',
+                data: f, dataType: 'json', type: 'post',
+                success: function (result) {
+                    if (result.code == 200) {
+                        layer.msg(result.msg, {icon: 1, time: 1500}, function () {
+                            parent.layer.close(parent.layer.getFrameIndex(window.name));
+                            parent.layui.table.reload("gasStation-table");
+                        });
+                    } else {
+                        layer.msg(result.msg, {icon: 2, time: 2200});
+                    }
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

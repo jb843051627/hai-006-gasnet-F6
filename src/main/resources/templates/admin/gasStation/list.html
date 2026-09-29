@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('燃气调压站基础档案')"/>
+</head>
+<body class="pear-container">
+<div class="layui-card">
+    <div class="layui-card-body">
+        <form class="layui-form" action="">
+            <div class="layui-form-item">
+                <label class="layui-form-label">调压站编号</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="stationNo" placeholder="编号模糊" class="layui-input">
+                </div>
+                <label class="layui-form-label">调压站名称</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="stationName" placeholder="名称模糊" class="layui-input">
+                </div>
+                <label class="layui-form-label">设备型号</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="deviceModel" placeholder="型号模糊" class="layui-input">
+                </div>
+                <label class="layui-form-label">当前状态</label>
+                <div class="layui-input-inline">
+                    <select name="status">
+                        <option value="">全部（含停用/报废）</option>
+                        <option value="0">在用</option>
+                        <option value="1">停用</option>
+                        <option value="2">报废</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">省</label>
+                <div class="layui-input-inline" style="width: 140px;">
+                    <select id="province_select" lay-filter="province_select"></select>
+                </div>
+                <label class="layui-form-label">市</label>
+                <div class="layui-input-inline" style="width: 140px;">
+                    <select id="city_select" lay-filter="city_select"></select>
+                </div>
+                <label class="layui-form-label">区</label>
+                <div class="layui-input-inline" style="width: 140px;">
+                    <select name="areaCode" id="area_select" lay-filter="area_select"></select>
+                </div>
+                <label class="layui-form-label">街道</label>
+                <div class="layui-input-inline" style="width: 140px;">
+                    <select name="streetCode" id="street_select" lay-filter="street_select"></select>
+                </div>
+                <label class="layui-form-label">片区</label>
+                <div class="layui-input-inline" style="width: 150px;">
+                    <select name="zoneId" id="zone_select"></select>
+                </div>
+                <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="gasStation-query">
+                    <i class="layui-icon layui-icon-search"></i>
+                    查询
+                </button>
+                <button type="reset" class="pear-btn pear-btn-md">
+                    <i class="layui-icon layui-icon-refresh"></i>
+                    重置
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="layui-card">
+    <div class="layui-card-body">
+        <table id="gasStation-table" lay-filter="gasStation-table"></table>
+    </div>
+</div>
+</body>
+
+<script type="text/html" id="gasStation-toolbar">
+    <button shiro:hasPermission="gasStation:add" class="pear-btn pear-btn-primary pear-btn-md" lay-event="add">
+        <i class="layui-icon layui-icon-add-1"></i>
+        新建调压站档案
+    </button>
+</script>
+
+<script type="text/html" id="gasStation-bar">
+    <button shiro:hasPermission="gasStation:list" class="pear-btn pear-btn-sm" lay-event="detail" title="档案详情/管辖管段/维护履历"><i class="layui-icon layui-icon-list"></i></button>
+    <button shiro:hasPermission="gasStation:edit" class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit" title="编辑档案"><i class="layui-icon layui-icon-edit"></i></button>
+</script>
+
+<script type="text/html" id="gasStation-status">
+    {{# if(d.status == 0){ }}
+    <span class="layui-badge layui-bg-green">在用</span>
+    {{# }else if(d.status == 1){ }}
+    <span class="layui-badge layui-bg-orange">停用</span>
+    {{# }else if(d.status == 2){ }}
+    <span class="layui-badge layui-bg-gray">报废</span>
+    {{# } }}
+</script>
+
+<th:block th:include="include :: footer"/>
+<script th:src="@{/static/admin/js/gasRegionLinkage.js}"></script>
+<script>
+    layui.use(['table', 'form', 'jquery'], function () {
+        let table = layui.table;
+        let form = layui.form;
+        let $ = layui.jquery;
+        let MODULE_PATH = rootPath + "/gasStation/";
+        let cols = [
+            [
+                {title: 'ID', field: 'id', align: 'center', hide: true},
+                {title: '调压站编号', field: 'stationNo', align: 'center', width: 150},
+                {title: '调压站名称', field: 'stationName', align: 'left', minWidth: 170},
+                {title: '站址坐标', align: 'center', width: 170, templet: function (d) {
+                        return d.lng + ', ' + d.lat;
+                    }},
+                {title: '管径', field: 'diameter', align: 'center', width: 130},
+                {title: '建成年份', field: 'layYear', align: 'center', width: 90},
+                {title: '设备型号', field: 'deviceModel', align: 'center', width: 160},
+                {title: '所属区', field: 'areaName', align: 'center', width: 100},
+                {title: '所属街道', field: 'streetName', align: 'center', width: 120},
+                {title: '所属片区', field: 'zoneName', align: 'center', width: 130},
+                {title: '状态', field: 'status', align: 'center', width: 90, toolbar: '#gasStation-status'},
+                {title: '建档时间', field: 'createTime', align: 'center', width: 160},
+                {title: '操作', toolbar: '#gasStation-bar', align: 'center', width: 120, fixed: 'right'}
+            ]
+        ];
+
+        table.render({
+            elem: '#gasStation-table',
+            url: MODULE_PATH + 'list',
+            page: true,
+            method: 'get',
+            cols: cols,
+            skin: 'line',
+            toolbar: '#gasStation-toolbar',
+            defaultToolbar: ['refresh', 'filter', 'print', 'exports'],
+            where: {orderByColumn: "id", isAsc: "desc"}
+        });
+
+        table.on('tool(gasStation-table)', function (obj) {
+            if (obj.event === 'edit') {
+                layer.open({
+                    type: 2, title: '编辑调压站档案', shade: 0.1,
+                    area: ['880px', '640px'],
+                    content: MODULE_PATH + 'edit/' + obj.data['id']
+                });
+            } else if (obj.event === 'detail') {
+                layer.open({
+                    type: 2, title: '调压站档案详情', shade: 0.1,
+                    area: ['1000px', '680px'],
+                    content: MODULE_PATH + 'detail/' + obj.data['id']
+                });
+            }
+        });
+
+        table.on('toolbar(gasStation-table)', function (obj) {
+            if (obj.event === 'add') {
+                layer.open({
+                    type: 2, title: '新建调压站档案', shade: 0.1,
+                    area: ['880px', '640px'],
+                    content: MODULE_PATH + 'add'
+                });
+            }
+        });
+
+        form.on('submit(gasStation-query)', function (data) {
+            table.reload('gasStation-table', {where: data.field, page: {curr: 1}});
+            return false;
+        });
+
+        GasRegionLinkage.init({
+            form: form, $: $,
+            placeholders: {province: '全部省', city: '全部市', area: '全部区', street: '全部街道', zone: '全部片区'}
+        });
+    });
+</script>
+</html>

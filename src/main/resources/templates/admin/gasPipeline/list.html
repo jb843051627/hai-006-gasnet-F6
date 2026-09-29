@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('燃气管道基础档案')"/>
+</head>
+<body class="pear-container">
+<div class="layui-card">
+    <div class="layui-card-body">
+        <form class="layui-form" action="">
+            <div class="layui-form-item">
+                <label class="layui-form-label">管道编号</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="pipeNo" placeholder="编号模糊" class="layui-input">
+                </div>
+                <label class="layui-form-label">管道名称</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="pipeName" placeholder="名称模糊" class="layui-input">
+                </div>
+                <label class="layui-form-label">当前状态</label>
+                <div class="layui-input-inline">
+                    <select name="status">
+                        <option value="">全部（含停用/报废）</option>
+                        <option value="0">在用</option>
+                        <option value="1">停用</option>
+                        <option value="2">报废</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">省</label>
+                <div class="layui-input-inline" style="width: 140px;">
+                    <select name="provinceCode" id="province_select" lay-filter="province_select">
+                        <option value="">全部省</option>
+                    </select>
+                </div>
+                <label class="layui-form-label">市</label>
+                <div class="layui-input-inline" style="width: 140px;">
+                    <select name="cityCode" id="city_select" lay-filter="city_select">
+                        <option value="">全部市</option>
+                    </select>
+                </div>
+                <label class="layui-form-label">区</label>
+                <div class="layui-input-inline" style="width: 140px;">
+                    <select name="areaCode" id="area_select" lay-filter="area_select">
+                        <option value="">全部区</option>
+                    </select>
+                </div>
+                <label class="layui-form-label">街道</label>
+                <div class="layui-input-inline" style="width: 140px;">
+                    <select name="streetCode" id="street_select" lay-filter="street_select">
+                        <option value="">全部街道</option>
+                    </select>
+                </div>
+                <label class="layui-form-label">片区</label>
+                <div class="layui-input-inline" style="width: 150px;">
+                    <select name="zoneId" id="zone_select">
+                        <option value="">全部片区</option>
+                    </select>
+                </div>
+                <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="gasPipeline-query">
+                    <i class="layui-icon layui-icon-search"></i>
+                    查询
+                </button>
+                <button type="reset" class="pear-btn pear-btn-md">
+                    <i class="layui-icon layui-icon-refresh"></i>
+                    重置
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="layui-card">
+    <div class="layui-card-body">
+        <table id="gasPipeline-table" lay-filter="gasPipeline-table"></table>
+    </div>
+</div>
+</body>
+
+<script type="text/html" id="gasPipeline-toolbar">
+    <button shiro:hasPermission="gasPipeline:add" class="pear-btn pear-btn-primary pear-btn-md" lay-event="add">
+        <i class="layui-icon layui-icon-add-1"></i>
+        新建管道档案
+    </button>
+    <button shiro:hasPermission="gasPipeline:export" class="pear-btn pear-btn-normal pear-btn-md" lay-event="exportAll">
+        <i class="layui-icon layui-icon-export"></i>
+        导出台账（含停用/报废）
+    </button>
+    <button shiro:hasPermission="gasPipeline:export" class="pear-btn pear-btn-md" lay-event="exportActive">
+        <i class="layui-icon layui-icon-export"></i>
+        导出台账（仅在用）
+    </button>
+</script>
+
+<script type="text/html" id="gasPipeline-bar">
+    <button shiro:hasPermission="gasPipeline:edit" class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit" title="编辑档案"><i class="layui-icon layui-icon-edit"></i></button>
+</script>
+
+<script type="text/html" id="gasPipeline-status">
+    {{# if(d.status == 0){ }}
+    <span class="layui-badge layui-bg-green">在用</span>
+    {{# }else if(d.status == 1){ }}
+    <span class="layui-badge layui-bg-orange">停用</span>
+    {{# }else if(d.status == 2){ }}
+    <span class="layui-badge layui-bg-gray">报废</span>
+    {{# } }}
+</script>
+
+<th:block th:include="include :: footer"/>
+<script th:src="@{/static/admin/js/gasRegionLinkage.js}"></script>
+<script>
+    layui.use(['table', 'form', 'jquery'], function () {
+        let table = layui.table;
+        let form = layui.form;
+        let $ = layui.jquery;
+
+        let MODULE_PATH = rootPath + "/gasPipeline/";
+        let cols = [
+            [
+                {title: 'ID', field: 'id', align: 'center', hide: true},
+                {title: '管道编号', field: 'pipeNo', align: 'center', width: 150},
+                {title: '管道名称', field: 'pipeName', align: 'left', minWidth: 180},
+                {title: '起点坐标', align: 'center', width: 170, templet: function (d) {
+                        return d.startLng + ', ' + d.startLat;
+                    }},
+                {title: '终点坐标', align: 'center', width: 170, templet: function (d) {
+                        return d.endLng + ', ' + d.endLat;
+                    }},
+                {title: '管径(mm)', field: 'diameter', align: 'center', width: 100},
+                {title: '材质', field: 'material', align: 'center', width: 90},
+                {title: '铺设年份', field: 'layYear', align: 'center', width: 90},
+                {title: '所属区', field: 'areaName', align: 'center', width: 100},
+                {title: '所属街道', field: 'streetName', align: 'center', width: 120},
+                {title: '所属片区', field: 'zoneName', align: 'center', width: 130},
+                {title: '状态', field: 'status', align: 'center', width: 90, toolbar: '#gasPipeline-status'},
+                {title: '建档时间', field: 'createTime', align: 'center', width: 160},
+                {title: '操作', toolbar: '#gasPipeline-bar', align: 'center', width: 90, fixed: 'right'}
+            ]
+        ];
+
+        table.render({
+            elem: '#gasPipeline-table',
+            url: MODULE_PATH + 'list',
+            page: true,
+            method: 'get',
+            cols: cols,
+            skin: 'line',
+            toolbar: '#gasPipeline-toolbar',
+            defaultToolbar: ['refresh', 'filter', 'print', 'exports'],
+            where: {orderByColumn: "id", isAsc: "desc"}
+        });
+
+        table.on('tool(gasPipeline-table)', function (obj) {
+            if (obj.event === 'edit') {
+                layer.open({
+                    type: 2, title: '编辑管道档案', shade: 0.1,
+                    area: ['860px', '620px'],
+                    content: MODULE_PATH + 'edit/' + obj.data['id']
+                });
+            }
+        });
+
+        table.on('toolbar(gasPipeline-table)', function (obj) {
+            if (obj.event === 'add') {
+                layer.open({
+                    type: 2, title: '新建管道档案', shade: 0.1,
+                    area: ['860px', '620px'],
+                    content: MODULE_PATH + 'add'
+                });
+            } else if (obj.event === 'exportAll') {
+                window.doExport(1);
+            } else if (obj.event === 'exportActive') {
+                window.doExport(0);
+            }
+        });
+
+        // 台账导出：携带当前区域过滤条件，是否含停用/报废历史档案可选
+        window.doExport = function (includeHistory) {
+            let formData = $('.layui-form').serializeArray();
+            let params = ['includeHistory=' + includeHistory];
+            for (let i = 0; i < formData.length; i++) {
+                let item = formData[i];
+                if (item.name === 'status' || item.name === 'pipeNo' || item.name === 'pipeName') {
+                    continue; // 台账导出只按区域过滤；状态由 includeHistory 决定
+                }
+                if (item.value) {
+                    params.push(encodeURIComponent(item.name) + '=' + encodeURIComponent(item.value));
+                }
+            }
+            window.location.href = MODULE_PATH + 'exportLedger?' + params.join('&');
+        };
+
+        form.on('submit(gasPipeline-query)', function (data) {
+            table.reload('gasPipeline-table', {where: data.field, page: {curr: 1}});
+            return false;
+        });
+
+        // ===== 省—市—区—街道—片区 五级联动（片区为本模块末梢） =====
+        GasRegionLinkage.init({
+            form: form, $: $,
+            placeholders: {province: '全部省', city: '全部市', area: '全部区', street: '全部街道', zone: '全部片区'}
+        });
+    });
+</script>
+</html>
